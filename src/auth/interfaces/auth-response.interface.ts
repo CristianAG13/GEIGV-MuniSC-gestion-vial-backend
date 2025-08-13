@@ -1,0 +1,10 @@
+export interface AuthResponse {
+  access_token: string;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+    roles: string[];
+  };
+  expires_in: number;
+}
