@@ -23,7 +23,7 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { email, password, name, roleIds } = createUserDto;
+    const { email, password, name, lastname, roleIds } = createUserDto;
 
     // Verificar si el email ya existe
     const existingUser = await this.userRepository.findOne({
@@ -42,6 +42,8 @@ export class UsersService {
       email: email.toLowerCase(),
       password: hashedPassword,
       name,
+      lastname,
+      
     });
 
     // Asignar roles si se proporcionaron
