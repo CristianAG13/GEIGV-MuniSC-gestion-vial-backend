@@ -20,7 +20,7 @@ async function bootstrap() {
 
   // Configurar CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: process.env.FRONTEND_URL ,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -30,13 +30,11 @@ async function bootstrap() {
 
   // Obtener configuración
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT') || 3000;
+  const port = configService.get<number>('PORT');
 
   await app.listen(port);
   
   console.log(`🚀 Aplicación corriendo en: http://localhost:${port}`);
-  console.log(`📚 API disponible en: http://localhost:${port}/api/v1`);
-  console.log(`🔐 Endpoints de auth: http://localhost:${port}/api/v1/auth`);
 }
 
 bootstrap().catch((error) => {

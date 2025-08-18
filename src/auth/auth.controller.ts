@@ -9,14 +9,31 @@ import { AuthResponse } from './interfaces/auth-response.interface';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('connection')
+  checkConnection() {
+    console.log('🔗 Frontend se ha conectado al backend exitosamente!');
+    return {
+      message: 'Conexión exitosa con el backend',
+      status: 'connected',
+      timestamp: new Date().toISOString(),
+      server: 'gestion-vial-backend'
+    };
+  }
+
   @Post('register')
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
-    return this.authService.register(registerDto);
+    console.log(`📝 Nuevo registro para: ${registerDto.email}`);
+    const result = await this.authService.register(registerDto);
+    console.log(`✅ Usuario registrado exitosamente: ${registerDto.email}`);
+    return result;
   }
 
   @Post('login')
   async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
-    return this.authService.login(loginDto);
+    console.log(`🔐 Intento de login para: ${loginDto.email}`);
+    const result = await this.authService.login(loginDto);
+    console.log(`✅ Login exitoso para: ${loginDto.email}`);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)

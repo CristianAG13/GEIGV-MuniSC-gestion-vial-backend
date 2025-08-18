@@ -20,14 +20,19 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const { email, password, name } = registerDto;
 
+    console.log(`📝 Intentando registrar usuario: ${email}`);
+
     // Verificar si el usuario ya existe
     const existingUser = await this.userRepository.findOne({
       where: { email },
     });
 
     if (existingUser) {
+      console.log(`⚠️ Usuario ya existe: ${email}`);
       throw new ConflictException('El usuario ya existe');
     }
+
+    console.log(`🔐 Hasheando contraseña para: ${email}`);
 
     // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -39,7 +44,11 @@ export class AuthService {
       name,
     });
 
+    console.log(`💾 Guardando usuario en base de datos: ${email}`);
+
     const savedUser = await this.userRepository.save(user);
+
+    console.log(`🎉 Usuario registrado exitosamente: ${email} con ID: ${savedUser.id}`);
 
     // Generar token
     return this.generateToken(savedUser);
@@ -48,6 +57,8 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const { email, password } = loginDto;
 
+    console.log(`🔍 Buscando usuario: ${email}`);
+
     // Buscar usuario con roles
     const user = await this.userRepository.findOne({
       where: { email },
@@ -55,14 +66,20 @@ export class AuthService {
     });
 
     if (!user) {
+      console.log(`❌ Usuario no encontrado: ${email}`);
       throw new UnauthorizedException('Credenciales inválidas');
     }
+
+    console.log(`👤 Usuario encontrado: ${email}`);
 
     // Verificar contraseña
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      console.log(`🔒 Contraseña incorrecta para: ${email}`);
       throw new UnauthorizedException('Credenciales inválidas');
     }
+
+    console.log(`🎉 Login exitoso para: ${email} con roles:`, user.roles?.map(r => r.name) || ['sin roles']);
 
     return this.generateToken(user);
   }

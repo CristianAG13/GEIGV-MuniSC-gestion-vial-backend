@@ -34,7 +34,7 @@ import { Role } from './roles/entities/role.entity';
         database: configService.get('DB_DATABASE'),
         entities: [User, Role],
         synchronize: configService.get('NODE_ENV') !== 'production',
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: false,
         timezone: 'Z',
         charset: 'utf8mb4',
         collation: 'utf8mb4_unicode_ci',
