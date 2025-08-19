@@ -25,14 +25,20 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {
-    // Configurar el transporter de Gmail
+    // Configurar el transporter de Gmail con opciones adicionales
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
       auth: {
         user: this.configService.get('EMAIL_USER'),
         pass: this.configService.get('EMAIL_PASSWORD'),
       },
-    });
+      tls: {
+        rejectUnauthorized: false
+      },
+    } as any);
   }
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -249,12 +255,30 @@ export class AuthService {
         `,
       };
 
+      console.log(`📧 Intentando enviar email a: ${email}`);
+      
+      // Verificar la conexión SMTP primero
+      await this.transporter.verify();
+      console.log('✅ Conexión SMTP verificada exitosamente');
+      
       await this.transporter.sendMail(mailOptions);
       console.log(`✅ Email de recuperación enviado exitosamente a: ${email}`);
       
     } catch (error) {
       console.error(`❌ Error enviando email a ${email}:`, error);
-      // No revelamos el error específico al usuario por seguridad
+      
+      // Log más específico del error
+      if (error.code === 'EDNS' || error.code === 'ENOTFOUND') {
+        console.error('🌐 Error de conexión de red o DNS. Verifica tu conexión a internet.');
+      } else if (error.code === 'EAUTH') {
+        console.error('🔐 Error de autenticación. Verifica tu email y contraseña de aplicación.');
+      } else {
+        console.error('📧 Error SMTP:', error.message);
+      }
+      
+      // Por ahora, mostrar el token en consola como fallback
+      console.log(`🔑 FALLBACK - Token de recuperación: ${resetToken}`);
+      console.log(`📱 Enlace de recuperación: ${this.configService.get('FRONTEND_URL')}/reset-password?token=${resetToken}`);
     }
 
     return {
