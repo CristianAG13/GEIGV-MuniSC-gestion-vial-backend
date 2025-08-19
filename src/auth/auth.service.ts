@@ -2,23 +2,38 @@ import { Injectable, UnauthorizedException, ConflictException, NotFoundException
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import * as nodemailer from 'nodemailer';
 import { User } from '../users/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyResetTokenDto } from './dto/verify-reset-token.dto';
 import { AuthResponse } from './interfaces/auth-response.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
+  private transporter: nodemailer.Transporter;
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    // Configurar el transporter de Gmail
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: this.configService.get('EMAIL_USER'),
+        pass: this.configService.get('EMAIL_PASSWORD'),
+      },
+    });
+  }
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const { email, password, name, lastname } = registerDto;
@@ -170,11 +185,78 @@ export class AuthService {
     await this.userRepository.save(user);
 
     console.log(`📧 Token de recuperación generado para: ${email}`);
-    console.log(`🔑 Token: ${resetToken}`);
-    console.log(`⏰ Expira: ${resetTokenExpires}`);
 
-    // En un entorno real, aquí enviarías un email
-    // Por ahora, solo mostramos el token en consola para desarrollo
+    // Enviar email con el enlace de recuperación
+    try {
+      const resetUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${resetToken}`;
+      
+      const mailOptions = {
+        from: `"Gestión Vial" <${this.configService.get('EMAIL_USER')}>`,
+        to: email,
+        subject: 'Recuperación de Contraseña - Gestión Vial',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333; text-align: center;">Recuperación de Contraseña</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p>Hola ${user.name || 'Usuario'},</p>
+              <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Gestión Vial</strong>.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" 
+                   style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                  Restablecer Contraseña
+                </a>
+              </div>
+              
+              <p><strong>O copia y pega este enlace en tu navegador:</strong></p>
+              <p style="word-break: break-all; background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace;">
+                ${resetUrl}
+              </p>
+              
+              <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 0; color: #856404;">
+                  <strong>⚠️ Importante:</strong> Este enlace expirará en <strong>1 hora</strong> por seguridad.
+                </p>
+              </div>
+              
+              <p>Si no solicitaste este cambio, puedes ignorar este email de forma segura.</p>
+              
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              
+              <p style="color: #666; font-size: 12px; text-align: center;">
+                Este es un email automático, por favor no respondas a este mensaje.<br>
+                <strong>Gestión Vial - Sistema de Administración</strong>
+              </p>
+            </div>
+          </div>
+        `,
+        text: `
+          Recuperación de Contraseña - Gestión Vial
+          
+          Hola ${user.name || 'Usuario'},
+          
+          Recibimos una solicitud para restablecer la contraseña de tu cuenta.
+          
+          Usa este enlace para restablecer tu contraseña:
+          ${resetUrl}
+          
+          Este enlace expirará en 1 hora por seguridad.
+          
+          Si no solicitaste este cambio, puedes ignorar este email.
+          
+          Gestión Vial - Sistema de Administración
+        `,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Email de recuperación enviado exitosamente a: ${email}`);
+      
+    } catch (error) {
+      console.error(`❌ Error enviando email a ${email}:`, error);
+      // No revelamos el error específico al usuario por seguridad
+    }
+
     return {
       message: 'Si el email existe, se enviará un enlace de recuperación',
     };
@@ -215,6 +297,43 @@ export class AuthService {
 
     return {
       message: 'Contraseña actualizada exitosamente',
+    };
+  }
+
+  async verifyResetToken(verifyResetTokenDto: VerifyResetTokenDto): Promise<{ valid: boolean; message: string; email?: string }> {
+    const { token } = verifyResetTokenDto;
+
+    console.log(`🔍 Verificando token de reset: ${token}`);
+
+    const user = await this.userRepository.findOne({
+      where: { 
+        resetPasswordToken: token,
+      },
+    });
+
+    if (!user) {
+      console.log(`❌ Token no encontrado: ${token}`);
+      return {
+        valid: false,
+        message: 'Token de reset inválido',
+      };
+    }
+
+    // Verificar si el token ha expirado
+    if (user.resetPasswordExpires < new Date()) {
+      console.log(`⏰ Token expirado para usuario: ${user.email}`);
+      return {
+        valid: false,
+        message: 'Token de reset expirado',
+      };
+    }
+
+    console.log(`✅ Token válido para usuario: ${user.email}`);
+
+    return {
+      valid: true,
+      message: 'Token válido',
+      email: user.email,
     };
   }
 }
