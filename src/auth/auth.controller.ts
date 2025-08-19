@@ -4,6 +4,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyResetTokenDto } from './dto/verify-reset-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthResponse } from './interfaces/auth-response.interface';
 
@@ -63,6 +64,14 @@ export class AuthController {
     console.log(`🔐 Solicitud de reset de contraseña`);
     const result = await this.authService.resetPassword(resetPasswordDto);
     console.log(`✅ Contraseña reseteada exitosamente`);
+    return result;
+  }
+
+  @Post('verify-reset-token')
+  async verifyResetToken(@Body() verifyResetTokenDto: VerifyResetTokenDto) {
+    console.log(`🔍 Verificando token de reset`);
+    const result = await this.authService.verifyResetToken(verifyResetTokenDto);
+    console.log(`📋 Resultado de verificación: ${result.valid ? 'válido' : 'inválido'}`);
     return result;
   }
 }
