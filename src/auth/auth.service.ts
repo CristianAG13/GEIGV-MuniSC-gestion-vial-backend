@@ -18,7 +18,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
-    const { email, password, name } = registerDto;
+    const { email, password, name, lastname } = registerDto;
 
     console.log(`📝 Intentando registrar usuario: ${email}`);
 
@@ -42,6 +42,7 @@ export class AuthService {
       email,
       password: hashedPassword,
       name,
+      lastname,
     });
 
     console.log(`💾 Guardando usuario en base de datos: ${email}`);
@@ -108,6 +109,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        lastname: user.lastname,
         roles,
       },
       expires_in: 3600, // 1 hora
