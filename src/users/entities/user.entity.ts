@@ -36,6 +36,13 @@ export class User {
   @Column({ type: 'datetime', nullable: true })
   lastLogin: Date;
 
+  @Column({ length: 255, nullable: true })
+  @Exclude()
+  resetPasswordToken: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  resetPasswordExpires: Date;
+
   @CreateDateColumn({ type: 'datetime' })
   createdAt: Date;
 
