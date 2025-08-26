@@ -22,6 +22,10 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
+    // 👇 Bypass: si el usuario es superadmin, acceso a todo
+    if (user.roles.some((userRole: any) => userRole.name === 'superadmin')) {
+      return true;
+    }
     return requiredRoles.some(role => 
       user.roles.some(userRole => userRole.name === role)
     );

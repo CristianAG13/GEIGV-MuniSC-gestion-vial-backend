@@ -10,6 +10,7 @@ import {
   UseGuards,
   ParseIntPipe,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -41,10 +42,19 @@ export class RolesController {
     return this.rolesService.findAll();
   }
 
+  // @Post('public/default')
+  // createDefaultRolesPublic() {
+  //   return this.rolesService.createDefaultRoles();
+  // }
   @Post('public/default')
-  createDefaultRolesPublic() {
-    return this.rolesService.createDefaultRoles();
+async createDefaultRolesPublic() {
+  try {
+    const result = await this.rolesService.createDefaultRoles();
+    return result;
+  } catch (error) {
+    throw new BadRequestException('Error creando roles por defecto');
   }
+}
 
   @Post('public')
   createPublic(@Body() createRoleDto: CreateRoleDto) {
@@ -79,7 +89,7 @@ export class RolesController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('admin', 'manager','superadmin')
   findAll(@Query('active') active?: string) {
     if (active === 'true') {
       return this.rolesService.findActive();
