@@ -156,26 +156,6 @@ export class RolesService {
   }
 
   // Método para crear roles por defecto
-  // async createDefaultRoles(): Promise<void> {
-  //   const defaultRoles = [
-  //     { name: 'admin', description: 'Administrador del sistema' },
-  //     { name: 'manager', description: 'Gerente con permisos de gestión' },
-  //     { name: 'user', description: 'Usuario estándar' },
-  //     { name: 'guest', description: 'Usuario invitado con permisos limitados' },
-  //   ];
-
-  //   for (const roleData of defaultRoles) {
-  //     const existingRole = await this.roleRepository.findOne({
-  //       where: { name: roleData.name },
-  //     });
-
-  //     if (!existingRole) {
-  //       const role = this.roleRepository.create(roleData);
-  //       await this.roleRepository.save(role);
-  //     }
-  //   }
-  // }
-  // En roles.service.ts
 async createDefaultRoles(): Promise<any> {
   try {
     const defaultRoles = [
