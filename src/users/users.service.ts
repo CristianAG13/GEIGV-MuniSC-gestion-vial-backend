@@ -68,7 +68,7 @@ export class UsersService {
   async findAll(): Promise<User[]> {
     return this.userRepository.find({
       relations: ['roles'],
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -137,23 +137,50 @@ export class UsersService {
     return this.findOne(id);
   }
 
+  // async assignRoles(id: number, assignRolesDto: AssignRolesDto): Promise<User> {
+  //   const user = await this.findOne(id);
+  //   const { roleIds } = assignRolesDto;
+
+  //   const roles = await this.roleRepository.findBy({
+  //     id: In(roleIds),
+  //   });
+
+  //   if (roles.length !== roleIds.length) {
+  //     throw new BadRequestException('Uno o más roles no existen');
+  //   }
+
+  //   user.roles = roles;
+  //   await this.userRepository.save(user);
+
+  //   return this.findOne(id);
+  // }
+
   async assignRoles(id: number, assignRolesDto: AssignRolesDto): Promise<User> {
-    const user = await this.findOne(id);
-    const { roleIds } = assignRolesDto;
+  const user = await this.findOne(id);
+  const { roleIds } = assignRolesDto;
 
-    const roles = await this.roleRepository.findBy({
-      id: In(roleIds),
-    });
-
-    if (roles.length !== roleIds.length) {
-      throw new BadRequestException('Uno o más roles no existen');
-    }
-
-    user.roles = roles;
+  if (roleIds.length === 0) {
+    // Remover todos los roles Y marcar como inactivo
+    user.roles = [];
+    user.isActive = false; // Agregar esta línea
     await this.userRepository.save(user);
-
     return this.findOne(id);
   }
+
+  // Para roles no vacíos, validar que existan y marcar como activo
+  const roles = await this.roleRepository.findBy({
+    id: In(roleIds),
+  });
+
+  if (roles.length !== roleIds.length) {
+    throw new BadRequestException('Uno o más roles no existen');
+  }
+
+  user.roles = roles;
+  user.isActive = true; // Activar cuando se asignan roles
+  await this.userRepository.save(user);
+  return this.findOne(id);
+}
 
   async removeRole(userId: number, roleId: number): Promise<User> {
     const user = await this.findOne(userId);

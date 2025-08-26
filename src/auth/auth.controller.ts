@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -7,10 +7,13 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyResetTokenDto } from './dto/verify-reset-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthResponse } from './interfaces/auth-response.interface';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService,
+  private readonly usersService: UsersService,  
+  ) {}
 
   @Get('connection')
   checkConnection() {
@@ -39,11 +42,33 @@ export class AuthController {
     return result;
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  async getProfile(@Request() req) {
-    return req.user;
+  // @UseGuards(JwtAuthGuard)
+  // @Get('profile')
+  // async getProfile(@Request() req) {
+  //   return req.user;
+  // }
+ 
+@UseGuards(JwtAuthGuard)
+@Get('profile')
+async getProfile(@Request() req) {
+  try {
+    const userId = req.user.id;
+    
+    // Usar el método existente que ya carga roles
+    const user = await this.usersService.findOne(userId);
+    
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      lastname: user.lastname,
+      roles: user.roles.map(role => role.name), // Array de nombres de roles
+      rol: user.roles.length > 0 ? user.roles[0].name : null // Primer rol como principal
+    };
+  } catch (error) {
+    throw new BadRequestException('Error obteniendo perfil');
   }
+}
 
   @UseGuards(JwtAuthGuard)
   @Post('refresh')

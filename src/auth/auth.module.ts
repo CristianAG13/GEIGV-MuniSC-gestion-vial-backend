@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../users/entities/user.entity';
+import { UsersModule } from '../users/users.module'; // Importar UsersModule
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { User } from '../users/entities/user.entity';
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([User]),
+    UsersModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
