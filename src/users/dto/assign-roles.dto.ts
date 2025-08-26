@@ -1,8 +1,11 @@
 import { IsArray, IsNotEmpty, ArrayMinSize } from 'class-validator';
 
 export class AssignRolesDto {
+  // @IsArray()
+  // @IsNotEmpty()
+  // @ArrayMinSize(1)
   @IsArray()
-  @IsNotEmpty()
-  @ArrayMinSize(1)
+  @ArrayMinSize(0) // Permitir arrays vacíos
   roleIds: number[];
+  
 }
