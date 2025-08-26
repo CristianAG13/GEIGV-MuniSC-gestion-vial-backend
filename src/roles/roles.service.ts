@@ -156,13 +156,17 @@ export class RolesService {
   }
 
   // Método para crear roles por defecto
-  async createDefaultRoles(): Promise<void> {
+async createDefaultRoles(): Promise<any> {
+  try {
     const defaultRoles = [
       { name: 'admin', description: 'Administrador del sistema' },
       { name: 'manager', description: 'Gerente con permisos de gestión' },
       { name: 'user', description: 'Usuario estándar' },
       { name: 'guest', description: 'Usuario invitado con permisos limitados' },
+      { name: 'superadmin', description: 'Administrador con todos los permisos' },
     ];
+
+    const createdRoles = [];
 
     for (const roleData of defaultRoles) {
       const existingRole = await this.roleRepository.findOne({
@@ -171,8 +175,21 @@ export class RolesService {
 
       if (!existingRole) {
         const role = this.roleRepository.create(roleData);
-        await this.roleRepository.save(role);
+        const savedRole = await this.roleRepository.save(role);
+        createdRoles.push(savedRole);
+      } else {
+        createdRoles.push(existingRole);
       }
     }
+
+    return {
+      message: 'Roles por defecto procesados exitosamente',
+      roles: createdRoles,
+      created: createdRoles.length
+    };
+  } catch (error) {
+    console.error('Error creating default roles:', error);
+    throw error;
   }
+}
 }

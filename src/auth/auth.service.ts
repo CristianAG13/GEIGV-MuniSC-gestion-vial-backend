@@ -29,7 +29,7 @@ export class AuthService {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
-      port: 587,
+      port: this.configService.get<number>('EMAIL_PORT'),
       secure: false,
       auth: {
         user: this.configService.get('EMAIL_USER'),
