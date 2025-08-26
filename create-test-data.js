@@ -13,9 +13,10 @@ async function createTestData() {
   
   console.log('=== ROLES ===');
   console.log(`INSERT INTO roles (name, description, isActive, createdAt, updatedAt) VALUES
+('superadmin', 'Administrador con todos los permisos', true, NOW(), NOW()),
 ('admin', 'Administrador del sistema', true, NOW(), NOW()),
-('manager', 'Gerente con permisos limitados', true, NOW(), NOW()),
-('user', 'Usuario básico', true, NOW(), NOW());`);
+('usuario', 'Usuario estándar', true, NOW(), NOW()),
+('invitado', 'Usuario invitado con permisos limitados', true, NOW(), NOW());`);
   
   console.log('\n=== USUARIO DE PRUEBA ===');
   console.log(`INSERT INTO users (name, lastname, email, password, isActive, createdAt, updatedAt) VALUES
@@ -24,7 +25,7 @@ async function createTestData() {
   
   console.log('\n=== ASIGNAR ROLES ===');
   console.log(`INSERT INTO user_roles (user_id, role_id) VALUES
-(1, 1),
+(1, 2),
 (2, 3);`);
   
   console.log('\n📝 CREDENCIALES PARA LOGIN:');
