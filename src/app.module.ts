@@ -9,10 +9,12 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
+import { RoleRequestsModule } from './role-requests/role-requests.module';
 
 // Entidades
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
+import { RoleRequest } from './role-requests/entities/role-request.entity';
 
 @Module({
   imports: [
@@ -32,7 +34,7 @@ import { Role } from './roles/entities/role.entity';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [User, Role],
+        entities: [User, Role, RoleRequest],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: false,
         timezone: 'Z',
@@ -46,6 +48,7 @@ import { Role } from './roles/entities/role.entity';
     RolesModule,
     UsersModule,
     AuthModule,
+    RoleRequestsModule,
   ],
   providers: [
     {
