@@ -10,11 +10,13 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { RoleRequestsModule } from './role-requests/role-requests.module';
+import { OperatorsModule } from './operators/operators.module';
 
 // Entidades
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
 import { RoleRequest } from './role-requests/entities/role-request.entity';
+import { Operator } from './operators/entities/operator.entity';
 
 @Module({
   imports: [
@@ -34,7 +36,7 @@ import { RoleRequest } from './role-requests/entities/role-request.entity';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [User, Role, RoleRequest],
+        entities: [User, Role, RoleRequest, Operator],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: false,
         timezone: 'Z',
@@ -49,6 +51,7 @@ import { RoleRequest } from './role-requests/entities/role-request.entity';
     UsersModule,
     AuthModule,
     RoleRequestsModule,
+    OperatorsModule,
   ],
   providers: [
     {
