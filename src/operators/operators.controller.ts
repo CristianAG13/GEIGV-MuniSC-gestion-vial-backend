@@ -93,4 +93,12 @@ export class OperatorsController {
   removeUserAssociation(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.removeUserAssociation(id);
   }
+
+  @Get(':id/reports')
+@UseGuards(RolesGuard)
+@Roles('admin', 'superadmin')
+getReports(@Param('id', ParseIntPipe) id: number) {
+  return this.operatorsService.getReportsByOperator(id);
+}
+
 }

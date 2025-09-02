@@ -141,4 +141,10 @@ async createDefaultRolesPublic() {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.remove(id);
   }
+
+    @Get('available-for-request')
+@UseGuards(JwtAuthGuard) // cualquier usuario logueado puede verlos
+async getAvailableForRequest() {
+  return this.rolesService.getAvailableForRequest();
+}
 }

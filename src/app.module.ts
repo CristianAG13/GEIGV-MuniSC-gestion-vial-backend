@@ -17,7 +17,11 @@ import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
 import { RoleRequest } from './role-requests/entities/role-request.entity';
 import { Operator } from './operators/entities/operator.entity';
-
+import { Machinery } from './machinery/entities/machinery.entity';
+import { MaterialReport } from './machinery/entities/material-report.entity';
+import { RentalReport } from './machinery/entities/rental-report.entity';
+import { Report } from './machinery/entities/report.entity';
+import { MachineryModule } from './machinery/machinery.module';
 @Module({
   imports: [
     // Configuración global
@@ -36,7 +40,7 @@ import { Operator } from './operators/entities/operator.entity';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [User, Role, RoleRequest, Operator],
+        entities: [User, Role, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: false,
         timezone: 'Z',
@@ -52,6 +56,7 @@ import { Operator } from './operators/entities/operator.entity';
     AuthModule,
     RoleRequestsModule,
     OperatorsModule,
+    MachineryModule,
   ],
   providers: [
     {

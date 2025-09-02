@@ -113,55 +113,80 @@ export class AuthService {
     return this.userRepository.findOne({
       where: { id: userId },
       relations: ['roles'],
+      
     });
   }
+
+  // private async generateToken(user: User): Promise<AuthResponse> {
+  //   const roles = user.roles ? user.roles.map(role => role.name) : [];
+    
+  //   const payload: JwtPayload = {
+  //     sub: user.id,
+  //     email: user.email,
+  //     roles,
+  //   };
+
+  //   const access_token = this.jwtService.sign(payload);
+
+  //   return {
+  //     access_token,
+  //     user: {
+  //       id: user.id,
+  //       email: user.email,
+  //       name: user.name,
+  //       lastname: user.lastname,
+  //       roles,
+  //     },
+  //     expires_in: 3600, // 1 hora
+  //   };
+  // }
 
   private async generateToken(user: User): Promise<AuthResponse> {
-    const roles = user.roles ? user.roles.map(role => role.name) : [];
-    
-    const payload: JwtPayload = {
-      sub: user.id,
+  const roles = user.roles ? user.roles.map(role => ({ id: role.id, name: role.name })) : [];
+  
+  const payload: JwtPayload = {
+    sub: user.id,
+    email: user.email,
+    roles,
+  };
+
+  const access_token = this.jwtService.sign(payload);
+
+  return {
+    access_token,
+    user: {
+      id: user.id,
       email: user.email,
+      name: user.name,
+      lastname: user.lastname,
       roles,
-    };
-
-    const access_token = this.jwtService.sign(payload);
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        lastname: user.lastname,
-        roles,
-      },
-      expires_in: 3600, // 1 hora
-    };
-  }
+    },
+    expires_in: 3600, // 1 hora
+  };
+}
 
   async refreshToken(userId: number): Promise<{ access_token: string }> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['roles'],
-    });
+  const user = await this.userRepository.findOne({
+    where: { id: userId },
+    relations: ['roles'],
+  });
 
-    if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
-    }
-
-    const roles = user.roles ? user.roles.map(role => role.name) : [];
-    
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      roles,
-    };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+  if (!user) {
+    throw new UnauthorizedException('Usuario no encontrado');
   }
+
+  const roles = user.roles ? user.roles.map(role => ({ id: role.id, name: role.name })) : [];
+
+  const payload: JwtPayload = {
+    sub: user.id,
+    email: user.email,
+    roles,
+  };
+
+  return {
+    access_token: this.jwtService.sign(payload, { expiresIn: '1h' }), // 👈 forzamos exp
+  };
+}
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
