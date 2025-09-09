@@ -69,15 +69,9 @@ export class Report {
   @JoinColumn({ name: 'operadorId' })
   operador: Operator;
 
-  @RelationId((r: Report) => r.operador)
-  operadorId: number;
-
   @ManyToOne(() => Machinery, (machinery) => machinery.reports, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn({ name: 'maquinariaId' })
   maquinaria: Machinery;
-
-  @RelationId((r: Report) => r.maquinaria)
-  maquinariaId: number;
 
   @OneToMany(() => MaterialReport, (material) => material.report)
   materiales: MaterialReport[];

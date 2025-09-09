@@ -120,7 +120,7 @@ async createReport(dto: CreateReportDto) {
 
 findAllReports() {
   return this.reportRepo.find({
-    relations: { operador: true, maquinariaId: true, materiales: true },
+    relations: { operador: true, maquinaria: true, materiales: true },
     order: { fecha: 'DESC', id: 'DESC' },
   });
 }
@@ -140,7 +140,7 @@ relations: ['operador', 'maquinaria', 'materiales'],
 
   findReportsByMachineryType(tipo: string) {
     return this.reportRepo.find({
-      where: { maquinariaId: { tipo } },
+      where: { maquinaria: { tipo } },
       relations: ['operador', 'maquinaria', 'materiales'],
     });
   }

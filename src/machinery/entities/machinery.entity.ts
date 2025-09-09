@@ -1,3 +1,33 @@
+// import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+// import { Report } from './report.entity';
+// import { MachineryRole } from './machinery-role.entity';
+
+// @Entity('machineries')
+// export class Machinery {
+//   @PrimaryGeneratedColumn()
+//   id: number;
+
+//   @Column()
+//   tipo: string; // vagoneta, excavadora, etc.
+
+//   @Column()
+//   placa: string;
+
+
+//   @Column({ default: true })
+//   esPropietaria: boolean;
+
+
+//   @OneToMany(() => Report, report => report.maquinaria)
+// reports: Report[];
+
+// @OneToMany(() => MachineryRole, (r) => r.machinery, { cascade: true })
+// roles?: MachineryRole[];
+// }
+
+
+
+// src/machinery/entities/machinery.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Report } from './report.entity';
 import { MachineryRole } from './machinery-role.entity';
@@ -8,19 +38,18 @@ export class Machinery {
   id: number;
 
   @Column()
-  tipo: string; // vagoneta, excavadora, etc.
+  tipo: string;
 
   @Column()
   placa: string;
 
-
   @Column({ default: true })
   esPropietaria: boolean;
 
+  @OneToMany(() => Report, (report) => report.maquinaria)
+  reports: Report[];
 
-  @OneToMany(() => Report, report => report.maquinariaId)
-reports: Report[];
-
-@OneToMany(() => MachineryRole, (r) => r.machinery, { cascade: true })
-roles?: MachineryRole[];
+  // ⬇️ AQUÍ ESTABA EL PROBLEMA: usa 'machinery', no 'machineryId'
+  @OneToMany(() => MachineryRole, (r) => r.machinery, { cascade: true })
+  roles?: MachineryRole[];
 }
