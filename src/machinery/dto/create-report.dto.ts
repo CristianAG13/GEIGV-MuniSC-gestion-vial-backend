@@ -1,17 +1,8 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, Matches } from 'class-validator';
 
 export class CreateReportDto {
   @IsDateString()
   fecha: string;
-
-  @IsOptional()
-  @IsString()
-  horaInicio?: string;
-
-  @IsOptional()
-  @IsString()
-  horaFin?: string;
-
 
   @IsOptional()
   @IsString()
@@ -53,7 +44,27 @@ export class CreateReportDto {
   @IsNumber()
   viaticos?: number;
 
+
+
+  //Nuevos campos
+   @IsOptional()
+  @IsString()
+  placaCarreta?: string;
+
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) // 00:00 - 23:59 (tú envías :00)
+  horaInicio?: string;
+
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  horaFin?: string;
+
+  @IsOptional()
+  @IsString()
+  tipoActividad?: string; // si no estaba
    
+
+
 
   @IsOptional()
   detalles?: Record<string, any>; 

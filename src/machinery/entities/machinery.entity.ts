@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Report } from './report.entity';
+import { MachineryRole } from './machinery-role.entity';
 
 @Entity('machineries')
 export class Machinery {
@@ -12,14 +13,14 @@ export class Machinery {
   @Column()
   placa: string;
 
-  @Column({ nullable: true })
-  rol: string; // normal | cisterna | remolque
-  
 
   @Column({ default: true })
   esPropietaria: boolean;
 
 
-  @OneToMany(() => Report, report => report.maquinaria)
+  @OneToMany(() => Report, report => report.maquinariaId)
 reports: Report[];
+
+@OneToMany(() => MachineryRole, (r) => r.machinery, { cascade: true })
+roles?: MachineryRole[];
 }

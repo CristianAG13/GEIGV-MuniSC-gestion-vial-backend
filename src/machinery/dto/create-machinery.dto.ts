@@ -7,10 +7,10 @@ export class CreateMachineryDto {
   @IsString()
   placa: string;
 
-  @IsOptional()
-  @IsString()
-  rol?: string;
-
   @IsBoolean()
   esPropietaria: boolean;
+
+  @IsOptional()
+  @IsString()
+  roles?: string[];
 }

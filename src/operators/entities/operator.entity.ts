@@ -83,6 +83,6 @@ export class Operator {
   user: User;
 
   // Relación con Report
-  @OneToMany(() => Report, (report) => report.operador)
+  @OneToMany(() => Report, (report) => report.operadorId)
   reports: Report[];
 }

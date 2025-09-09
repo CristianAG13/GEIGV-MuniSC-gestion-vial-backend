@@ -1,26 +1,37 @@
-import { Controller, Post, Get, Body, Query, UseGuards, ParseIntPipe, Param, Patch, Delete, NotFoundException } from '@nestjs/common';
+
+// machinery.controller.ts
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+
 import { MachineryService } from './machinery.service';
 import { CreateMachineryDto } from './dto/create-machinery.dto';
+import { UpdateMachineryDto } from './dto/update-machinery.dto';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CreateRentalReportDto } from './dto/create-rental-report.dto';
 import { CreateMaterialReportDto } from './dto/create-material-report.dto';
 
-
-// 👇 Agregar estas dos importaciones
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UpdateMachineryDto } from './dto/update-machinery.dto';
-
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('machinery')
 export class MachineryController {
-
   constructor(private readonly service: MachineryService) {}
 
-  // Maquinaria
+  // ---------- Maquinarias ----------
   @Post()
+  @Roles('admin') // ajusta si quieres permitir a otros
   createMachinery(@Body() dto: CreateMachineryDto) {
     return this.service.createMachinery(dto);
   }
@@ -30,12 +41,27 @@ export class MachineryController {
     return this.service.findAllMachinery();
   }
 
-  @Get(':id')
-findOne(@Param('id', ParseIntPipe) id: number) {
-  return this.service.findOne(id);
-}
+  @Get(':id(\\d+)')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findOne(id);
+  }
 
-  // Reportes municipales
+  @Patch(':id')
+  @Roles('admin')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMachineryDto,
+  ) {
+    return this.service.updateMachinery(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles('admin')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.service.remove(id);
+  }
+
+  // ---------- Reportes municipales ----------
   @Post('report')
   createReport(@Body() dto: CreateReportDto) {
     return this.service.createReport(dto);
@@ -65,7 +91,7 @@ findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findCisternaReports();
   }
 
-  // Reportes de alquiler
+  // ---------- Reportes de alquiler ----------
   @Post('rental-report')
   createRentalReport(@Body() dto: CreateRentalReportDto) {
     return this.service.createRentalReport(dto);
@@ -76,7 +102,7 @@ findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findAllRentalReports();
   }
 
-  // Reportes de materiales
+  // ---------- Reportes de materiales ----------
   @Post('material-report')
   createMaterialReport(@Body() dto: CreateMaterialReportDto) {
     return this.service.createMaterialReport(dto);
@@ -92,42 +118,24 @@ findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findMaterialsBySource(source);
   }
 
+  // ---------- Resúmenes (ej. dashboards) ----------
+  @Get('report/summary/materials')
   @Roles('admin', 'superadmin')
-@Get('report/summary/materials')
-getMaterialSummary(@Query('month') month: number) {
-  return this.service.getMaterialSummaryByMonth(month);
-}
-
-@Roles('admin', 'superadmin')
-@Get('report/summary/operadores')
-getHorasOperador(@Query('month') month: number) {
-  return this.service.getHorasMaquinaByOperador(month);
-}
-
-@Roles('admin', 'superadmin')
-@Get('rental-report/summary')
-getRentalSummary(@Query('month') month: number) {
-  return this.service.getRentalSummaryByMonth(month);
-}
-
-// 🚀 NUEVO PATCH
-  @Patch(':id')
-  @Roles('admin')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateMachineryDto
-  ) {
-    return this.service.update(id, dto);
+  getMaterialSummary(@Query('month') month: number) {
+    return this.service.getMaterialSummaryByMonth(month);
   }
 
-  @Delete(':id')
-  @Roles('admin')
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    const deleted = await this.service.remove(id);
-    if (!deleted) {
-      throw new NotFoundException(`Maquinaria con ID ${id} no encontrada`);
-    }
-    return { message: 'Maquinaria eliminada correctamente' };
+  @Get('report/summary/operadores')
+  @Roles('admin', 'superadmin')
+  getHorasOperador(@Query('month') month: number) {
+    return this.service.getHorasMaquinaByOperador(month);
+  }
+
+  @Get('rental-report/summary')
+  @Roles('admin', 'superadmin')
+  getRentalSummary(@Query('month') month: number) {
+    return this.service.getRentalSummaryByMonth(month);
   }
 }
+
 
