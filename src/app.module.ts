@@ -15,6 +15,7 @@ import { MachineryModule } from './machinery/machinery.module';
 // Entidades
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
+import { Permission } from './roles/entities/permission.entity';
 import { RoleRequest } from './role-requests/entities/role-request.entity';
 import { Operator } from './operators/entities/operator.entity';
 import { Machinery } from './machinery/entities/machinery.entity';
@@ -40,9 +41,9 @@ import { MachineryRole } from './machinery/entities/machinery-role.entity';
         username: config.get<string>('DB_USERNAME'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_DATABASE'),
-        entities: [User, Role, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole],
-        synchronize: config.get('DB_SYNC') === 'true', // ⚠️ pon DB_SYNC=false en .env
-        logging: false,
+        entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole],
+        synchronize: config.get('DB_SYNC') === 'true', // Ahora está configurado a true en .env
+        logging: true,
         timezone: 'Z',
         charset: 'utf8mb4',
         collation: 'utf8mb4_unicode_ci',

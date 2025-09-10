@@ -57,6 +57,12 @@ export class RoleRequestsService {
     if (user.roles.some(userRole => userRole.id === role.id)) {
       throw new BadRequestException(`Ya tienes el rol '${requestedRole}' asignado`);
     }
+    
+    // Verificar si el usuario tiene otro rol y mostrar un mensaje informativo
+    if (user.roles.length > 0) {
+      const currentRoles = user.roles.map(r => r.name).join(', ');
+      console.log(`⚠️ Usuario ${user.email} solicita cambiar su rol actual (${currentRoles}) por '${requestedRole}'`);
+    }
 
     // Crear la solicitud
     const roleRequest = this.roleRequestRepository.create({
@@ -117,12 +123,13 @@ export class RoleRequestsService {
       relations: ['roles']
     });
 
-    // Verificar si el usuario ya tiene el rol (por si acaso)
-    if (!user.roles.some(role => role.id === request.roleId)) {
-      user.roles.push(request.requestedRole);
-      user.isActive = true; // Activar usuario al asignar rol
-      await this.userRepository.save(user);
-    }
+    // Asignar el rol solicitado como ÚNICO rol del usuario
+    // Esto reemplaza cualquier rol anterior que pudiera tener
+    user.roles = [request.requestedRole];
+    user.isActive = true; // Activar usuario al asignar rol
+    await this.userRepository.save(user);
+    
+    console.log(`👑 Usuario ${user.email} actualizado con el rol: ${request.requestedRole.name}`);
 
     return this.roleRequestRepository.save(request);
   }

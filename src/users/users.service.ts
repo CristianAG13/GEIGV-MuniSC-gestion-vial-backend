@@ -43,20 +43,49 @@ export class UsersService {
       password: hashedPassword,
       name,
       lastname,
-      
     });
 
-    // Asignar roles si se proporcionaron
-    if (roleIds && roleIds.length > 0) {
-      const roles = await this.roleRepository.findBy({
-        id: In(roleIds),
+    // Verificar si este es el primer usuario en el sistema
+    const userCount = await this.userRepository.count();
+
+    if (userCount === 0) {
+      // Si es el primer usuario, asignarle el rol de superadmin
+      const superadminRole = await this.roleRepository.findOne({
+        where: { name: 'superadmin' }
       });
 
-      if (roles.length !== roleIds.length) {
-        throw new BadRequestException('Uno o más roles no existen');
+      if (!superadminRole) {
+        // Si no existe el rol, crear uno
+        throw new BadRequestException('El rol superadmin no existe en el sistema');
       }
 
-      user.roles = roles;
+      user.roles = [superadminRole];
+      console.log('Primer usuario creado. Se ha asignado el rol de superadmin');
+    } else {
+      // Para los demás usuarios, asignar roles si se proporcionaron
+      if (roleIds && roleIds.length > 0) {
+        const roles = await this.roleRepository.findBy({
+          id: In(roleIds),
+        });
+
+        if (roles.length !== roleIds.length) {
+          throw new BadRequestException('Uno o más roles no existen');
+        }
+
+        user.roles = roles;
+      } else {
+        // Si no se proporcionaron roles, asignar rol de invitado por defecto
+        const invitadoRole = await this.roleRepository.findOne({
+          where: { name: 'invitado' }
+        });
+
+        if (invitadoRole) {
+          user.roles = [invitadoRole];
+          console.log(`Usuario ${email} creado. Se ha asignado el rol de invitado por defecto`);
+        } else {
+          console.warn('No se encontró el rol "invitado" para asignar por defecto');
+        }
+      }
     }
 
     const savedUser = await this.userRepository.save(user);

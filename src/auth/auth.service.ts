@@ -3,10 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -24,6 +26,8 @@ export class AuthService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private moduleRef: ModuleRef,
+    private usersService: UsersService,
   ) {
     // Configurar el transporter de Gmail con opciones adicionales
     this.transporter = nodemailer.createTransport({
@@ -42,7 +46,7 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
-    const { email, password, name, lastname } = registerDto;
+    const { email, name, lastname, password } = registerDto;
 
     console.log(`📝 Intentando registrar usuario: ${email}`);
 
@@ -55,25 +59,36 @@ export class AuthService {
       console.log(`⚠️ Usuario ya existe: ${email}`);
       throw new ConflictException('El usuario ya existe');
     }
-
-    console.log(`🔐 Hasheando contraseña para: ${email}`);
-
-    // Hashear la contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Crear el usuario
-    const user = this.userRepository.create({
+    
+    console.log(`💾 Creando usuario en base de datos: ${email}`);
+    
+    // Contar usuarios para mostrar mensajes más descriptivos
+    const userCount = await this.userRepository.count();
+    const isFirstUser = userCount === 0;
+    
+    const createUserDto = {
       email,
-      password: hashedPassword,
+      password,
       name,
       lastname,
-    });
-
-    console.log(`💾 Guardando usuario en base de datos: ${email}`);
-
-    const savedUser = await this.userRepository.save(user);
+      roleIds: [] // Se asignará automáticamente según la lógica
+    };
+    
+    // Usar el UsersService inyectado en el constructor
+    // Esto aplicará la lógica de asignar superadmin al primer usuario o invitado a los demás
+    const savedUser = await this.usersService.create(createUserDto);
 
     console.log(`🎉 Usuario registrado exitosamente: ${email} con ID: ${savedUser.id}`);
+    
+    if (savedUser.roles && savedUser.roles.length > 0) {
+      if (isFirstUser) {
+        console.log(`👑 Primer usuario - Rol asignado: ${savedUser.roles.map(r => r.name).join(', ')}`);
+      } else {
+        console.log(`🔑 Usuario nuevo - Rol asignado: ${savedUser.roles.map(r => r.name).join(', ')}`);
+      }
+    } else {
+      console.warn(`⚠️ Usuario creado sin roles asignados: ${email}`);
+    }
 
     // Generar token
     return this.generateToken(savedUser);
