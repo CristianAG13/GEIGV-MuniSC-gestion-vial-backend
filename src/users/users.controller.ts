@@ -29,14 +29,14 @@ export class UsersController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('ingeniero', 'manager')
   findAll(@Query('role') role?: string) {
     if (role) {
       return this.usersService.findByRole(role);
@@ -46,21 +46,21 @@ export class UsersController {
 
   @Get('stats')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   getStats() {
     return this.usersService.getStats();
   }
 
   @Get(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('ingeniero', 'manager')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
@@ -70,7 +70,7 @@ export class UsersController {
 
   @Post(':id/roles')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   assignRoles(
     @Param('id', ParseIntPipe) id: number,
     @Body() assignRolesDto: AssignRolesDto,
@@ -80,7 +80,7 @@ export class UsersController {
 
   @Delete(':id/roles/:roleId')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   removeRole(
     @Param('id', ParseIntPipe) id: number,
     @Param('roleId', ParseIntPipe) roleId: number,
@@ -90,21 +90,21 @@ export class UsersController {
 
   @Patch(':id/deactivate')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   deactivate(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.deactivate(id);
   }
 
   @Patch(':id/activate')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.activate(id);
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);
   }

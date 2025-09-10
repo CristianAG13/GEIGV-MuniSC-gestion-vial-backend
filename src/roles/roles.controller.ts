@@ -75,21 +75,21 @@ async createDefaultRolesPublic() {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
 
   @Post('default')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   createDefaultRoles() {
     return this.rolesService.createDefaultRoles();
   }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'manager','superadmin')
+  @Roles('ingeniero', 'manager','superadmin')
   findAll(@Query('active') active?: string) {
     if (active === 'true') {
       return this.rolesService.findActive();
@@ -99,21 +99,21 @@ async createDefaultRolesPublic() {
 
   @Get('stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   getStats() {
     return this.rolesService.getStats();
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'manager')
+  @Roles('ingeniero', 'manager')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -123,21 +123,21 @@ async createDefaultRolesPublic() {
 
   @Patch(':id/activate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.activate(id);
   }
 
   @Patch(':id/deactivate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   deactivate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.deactivate(id);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('ingeniero')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.remove(id);
   }
