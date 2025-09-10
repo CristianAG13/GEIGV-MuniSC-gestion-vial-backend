@@ -118,7 +118,7 @@ export class RolesService {
     const role = await this.findOne(id);
     
     // Verificar si es un rol crítico
-    if (['admin', 'superadmin'].includes(role.name)) {
+    if (['ingeniero', 'superadmin'].includes(role.name)) {
       throw new BadRequestException(`No se puede desactivar el rol '${role.name}'`);
     }
 
@@ -160,8 +160,8 @@ async createDefaultRoles(): Promise<any> {
   try {
     const defaultRoles = [
       { name: 'superadmin', description: 'Administrador con todos los permisos' },
-      { name: 'admin', description: 'Administrador del sistema' },
       { name: 'ingeniero', description: 'Ingeniero con permisos de gestión' },
+      { name: 'inspector', description: 'Inspector con permisos de gestión' },
       { name: 'operario', description: 'Operario con permisos de gestión' },
       { name: 'invitado', description: 'Usuario invitado con permisos limitados' },
     ];
@@ -194,10 +194,10 @@ async createDefaultRoles(): Promise<any> {
 }
 
 async getAvailableForRequest() {
-  // Traer roles que el usuario puede pedir (ej: excluir superadmin y admin)
+  // Traer roles que el usuario puede pedir (ej: excluir superadmin y ingeniero)
   return this.roleRepository.find({
     where: {
-      name: Not(In(['superadmin', 'admin']))
+      name: Not(In(['superadmin', 'ingeniero']))
     }
   });
 }

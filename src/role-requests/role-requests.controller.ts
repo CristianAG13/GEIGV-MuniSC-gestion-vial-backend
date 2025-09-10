@@ -39,14 +39,14 @@ export class RoleRequestsController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('ingeniero', 'superadmin')
   async findAll() {
     return this.roleRequestsService.findAll();
   }
 
   @Get('pending')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('ingeniero', 'superadmin')
   async findPending() {
     return this.roleRequestsService.findPending();
   }
@@ -59,7 +59,7 @@ export class RoleRequestsController {
 
   @Patch(':requestId/approve')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('ingeniero', 'superadmin')
   @HttpCode(HttpStatus.OK)
   async approveRequest(@Param('requestId', ParseIntPipe) requestId: number, @Request() req) {
     const adminId = req.user.id;
@@ -73,7 +73,7 @@ export class RoleRequestsController {
 
   @Patch(':requestId/reject')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('ingeniero', 'superadmin')
   @HttpCode(HttpStatus.OK)
   async rejectRequest(
     @Param('requestId', ParseIntPipe) requestId: number,
@@ -86,7 +86,7 @@ export class RoleRequestsController {
 
   @Get('stats')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('ingeniero', 'superadmin')
   async getStats() {
     return this.roleRequestsService.getStats();
   }

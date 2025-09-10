@@ -112,7 +112,7 @@ Authorization: Bearer {token}
 GET /api/v1/users
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`, `manager`
+**Roles requeridos:** `ingeniero`, `manager`
 
 ### Crear Usuario
 ```http
@@ -127,14 +127,14 @@ Content-Type: application/json
   "roleIds": [1, 2]
 }
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ### Obtener Usuario Específico
 ```http
 GET /api/v1/users/{id}
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`, `manager`
+**Roles requeridos:** `ingeniero`, `manager`
 
 ### Actualizar Usuario
 ```http
@@ -148,7 +148,7 @@ Content-Type: application/json
   "roleIds": [1]
 }
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ### Asignar Roles a Usuario
 ```http
@@ -160,14 +160,14 @@ Content-Type: application/json
   "roleIds": [1, 2, 3]
 }
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ### Quitar Rol Específico
 ```http
 DELETE /api/v1/users/{id}/roles/{roleId}
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ### Activar/Desactivar Usuario
 ```http
@@ -177,21 +177,21 @@ Authorization: Bearer {token}
 PATCH /api/v1/users/{id}/deactivate
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ### Eliminar Usuario
 ```http
 DELETE /api/v1/users/{id}
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ### Estadísticas de Usuarios
 ```http
 GET /api/v1/users/stats
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 **Respuesta:**
 ```json
@@ -232,10 +232,11 @@ POST /api/v1/roles/public/default
 ```
 
 **Roles creados:**
-- `admin` - Administrador del sistema
-- `manager` - Gerente con permisos de gestión
-- `user` - Usuario estándar
-- `guest` - Usuario invitado con permisos limitados
+- `superadmin` - Administrador con todos los permisos
+- `ingeniero` - Ingeniero con permisos de gestión
+- `inspector` - Inspector con permisos de gestión
+- `operario` - Operario con permisos de gestión
+- `invitado` - Usuario invitado con permisos limitados
 
 #### Listar Roles (Público)
 ```http
@@ -273,7 +274,7 @@ GET /api/v1/roles/public/stats
 GET /api/v1/roles
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`, `manager`
+**Roles requeridos:** `ingeniero`, `manager`
 
 #### Crear Rol
 ```http
@@ -286,7 +287,7 @@ Content-Type: application/json
   "description": "Moderador de contenido"
 }
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 #### Actualizar Rol
 ```http
@@ -300,7 +301,7 @@ Content-Type: application/json
   "isActive": true
 }
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 #### Activar/Desactivar Rol
 ```http
@@ -308,14 +309,14 @@ PATCH /api/v1/roles/{id}/activate
 PATCH /api/v1/roles/{id}/deactivate
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 #### Eliminar Rol
 ```http
 DELETE /api/v1/roles/{id}
 Authorization: Bearer {token}
 ```
-**Roles requeridos:** `admin`
+**Roles requeridos:** `ingeniero`
 
 ## 🛠️ Testing Rápido
 
@@ -339,9 +340,9 @@ curl http://localhost:3000/api/v1/roles/public
 curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@heidy.com",
+    "email": "ingeniero@heidy.com",
     "password": "123456",
-    "name": "Administrador"
+    "name": "Ingeniero"
   }'
 ```
 
@@ -360,10 +361,10 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 | Rol | Descripción | Permisos |
 |-----|-------------|----------|
-| `admin` | Administrador | Acceso completo a todos los recursos |
-| `manager` | Gerente | Gestión de usuarios, visualización de estadísticas |
-| `user` | Usuario estándar | Acceso básico, gestión de perfil propio |
-| `guest` | Invitado | Acceso de solo lectura limitado |
+| `ingeniero` | Ingeniero | Acceso completo a todos los recursos |
+| `inspector` | Inspector | Inspección de obras y visualización de estadísticas |
+| `operario` | Operario | Acceso básico, gestión de perfil propio |
+| `invitado` | Invitado | Acceso de solo lectura limitado |
 
 ## 🐛 Solución de Problemas
 
