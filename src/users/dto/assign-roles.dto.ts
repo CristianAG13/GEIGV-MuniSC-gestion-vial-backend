@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, ArrayMinSize } from 'class-validator';
+import { IsArray, ArrayMinSize } from 'class-validator';
 
 export class AssignRolesDto {
   // @IsArray()

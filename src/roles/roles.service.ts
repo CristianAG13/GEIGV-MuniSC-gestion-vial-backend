@@ -5,7 +5,7 @@ import {
   BadRequestException 
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -191,5 +191,14 @@ async createDefaultRoles(): Promise<any> {
     console.error('Error creating default roles:', error);
     throw error;
   }
+}
+
+async getAvailableForRequest() {
+  // Traer roles que el usuario puede pedir (ej: excluir superadmin y admin)
+  return this.roleRepository.find({
+    where: {
+      name: Not(In(['superadmin', 'admin']))
+    }
+  });
 }
 }

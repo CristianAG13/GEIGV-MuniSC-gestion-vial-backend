@@ -7,7 +7,8 @@ import {
   CreateDateColumn, 
   UpdateDateColumn,
   BeforeInsert,
-  BeforeUpdate
+  BeforeUpdate,
+
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 import { Exclude } from 'class-transformer';
@@ -57,6 +58,8 @@ export class User {
   })
   roles: Role[];
 
+
+
   @BeforeInsert()
   @BeforeUpdate()
   emailToLowerCase() {
@@ -64,4 +67,8 @@ export class User {
       this.email = this.email.toLowerCase();
     }
   }
+
+    
+ 
+
 }

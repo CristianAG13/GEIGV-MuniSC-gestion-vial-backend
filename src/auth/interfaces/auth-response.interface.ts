@@ -5,7 +5,7 @@ export interface AuthResponse {
     email: string;
     name: string;
     lastname: string;
-    roles: string[];
+    roles: { id: number; name: string }[];
   };
   expires_in: number;
 }

@@ -202,4 +202,18 @@ export class OperatorsService {
 
     return this.findOne(id);
   }
+
+  async getReportsByOperator(id: number) {
+  const operator = await this.operatorsRepository.findOne({
+    where: { id },
+    relations: ['reports', 'reports.maquinaria'], // 👈 trae también la maquinaria
+  });
+
+  if (!operator) {
+    throw new NotFoundException(`No se encontró un operador con el ID ${id}`);
+  }
+
+  return operator.reports;
+}
+
 }

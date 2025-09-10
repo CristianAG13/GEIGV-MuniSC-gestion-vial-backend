@@ -12,3 +12,5 @@ import { Role } from '../roles/entities/role.entity';
   exports: [UsersService],
 })
 export class UsersModule {}
+
+export { UsersService };

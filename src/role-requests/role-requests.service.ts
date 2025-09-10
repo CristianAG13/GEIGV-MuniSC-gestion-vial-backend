@@ -5,7 +5,7 @@ import {
   ForbiddenException 
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { RoleRequest, RoleRequestStatus } from './entities/role-request.entity';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
@@ -198,4 +198,5 @@ export class RoleRequestsService {
 
     return request;
   }
+
 }
