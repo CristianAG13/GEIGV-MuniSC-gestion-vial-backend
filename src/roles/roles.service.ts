@@ -159,11 +159,11 @@ export class RolesService {
 async createDefaultRoles(): Promise<any> {
   try {
     const defaultRoles = [
-      { name: 'admin', description: 'Administrador del sistema' },
-      { name: 'manager', description: 'Gerente con permisos de gestión' },
-      { name: 'user', description: 'Usuario estándar' },
-      { name: 'guest', description: 'Usuario invitado con permisos limitados' },
       { name: 'superadmin', description: 'Administrador con todos los permisos' },
+      { name: 'admin', description: 'Administrador del sistema' },
+      { name: 'ingeniero', description: 'Ingeniero con permisos de gestión' },
+      { name: 'operario', description: 'Operario con permisos de gestión' },
+      { name: 'invitado', description: 'Usuario invitado con permisos limitados' },
     ];
 
     const createdRoles = [];

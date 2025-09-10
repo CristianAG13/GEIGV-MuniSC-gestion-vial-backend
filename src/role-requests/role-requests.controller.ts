@@ -28,7 +28,13 @@ export class RoleRequestsController {
   @HttpCode(HttpStatus.CREATED)
   async createRequest(@Request() req, @Body() createRoleRequestDto: CreateRoleRequestDto) {
     const userId = req.user.id;
-    return this.roleRequestsService.create(userId, createRoleRequestDto);
+    const request = await this.roleRequestsService.create(userId, createRoleRequestDto);
+    
+    // Mensaje informativo que indica que cualquier rol existente será reemplazado
+    return {
+      ...request,
+      message: `Solicitud de rol '${createRoleRequestDto.requestedRole}' creada con éxito. Al ser aprobada, reemplazará cualquier rol existente.`
+    };
   }
 
   @Get()
@@ -57,7 +63,12 @@ export class RoleRequestsController {
   @HttpCode(HttpStatus.OK)
   async approveRequest(@Param('requestId', ParseIntPipe) requestId: number, @Request() req) {
     const adminId = req.user.id;
-    return this.roleRequestsService.approve(requestId, adminId);
+    const result = await this.roleRequestsService.approve(requestId, adminId);
+    
+    return {
+      ...result,
+      message: `Solicitud aprobada con éxito. Se ha actualizado el rol del usuario a '${result.requestedRole.name}'.`
+    };
   }
 
   @Patch(':requestId/reject')
