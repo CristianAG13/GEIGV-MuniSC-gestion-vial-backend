@@ -27,6 +27,8 @@ function splitEstacion(s?: string | null) {
   return { desde: Number(m[1]), hasta: Number(m[2]) };
 }
 
+
+
 @Injectable()
 export class MachineryService {
 
@@ -86,6 +88,7 @@ async createMachinery(dto: CreateMachineryDto) {
     relations: { roles: true },
   }); 
 }
+
 
   async findAllMachinery() {
   // Puedes devolver tal cual con roles (entidades)...

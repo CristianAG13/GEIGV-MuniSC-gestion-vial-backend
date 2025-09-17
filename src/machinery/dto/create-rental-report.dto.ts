@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString, Matches, ValidateIf } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, Matches, ValidateIf, IsIn } from 'class-validator';
 
 export class CreateRentalReportDto {
   @IsString()
@@ -35,4 +35,8 @@ export class CreateRentalReportDto {
   @IsOptional()
   @IsDateString()
   fecha?: string;
+
+ @IsString()
+  @IsIn(['Kilcsa', 'Palo de Arco'])
+  fuente: string;
 }
