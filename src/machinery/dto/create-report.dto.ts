@@ -1,4 +1,7 @@
-import { IsString, IsNumber, IsOptional, IsDateString, Matches } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, Matches, Min, IsInt } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+
 
 export class CreateReportDto {
   @IsDateString()
@@ -8,8 +11,13 @@ export class CreateReportDto {
   @IsString()
   actividad?: string;
 
+  // @IsOptional()
+  // @IsString()
+  // estacion?: string;
+
   @IsOptional()
   @IsString()
+  @Matches(/^\s*\d+\s*\+\s*\d+\s*$/) // "100+350", con espacios opcionales
   estacion?: string;
 
   @IsOptional()
@@ -19,10 +27,6 @@ export class CreateReportDto {
   @IsOptional()
   @IsString()
   distrito?: string;
-
-  @IsOptional()
-  @IsNumber()
-  horimetro?: number;
 
   @IsOptional()
   @IsNumber()
@@ -63,8 +67,12 @@ export class CreateReportDto {
   @IsString()
   tipoActividad?: string; // si no estaba
    
-
-
+  @IsOptional()
+  @Transform(({ value }) => value === '' || value == null ? null : Number(value))
+  @IsInt()
+  @Min(0)
+  horimetro?: number | null;
+  
 
   @IsOptional()
   detalles?: Record<string, any>; 
