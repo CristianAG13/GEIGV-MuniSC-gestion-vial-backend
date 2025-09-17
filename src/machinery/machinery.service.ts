@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, DeepPartial } from 'typeorm';
 import { Machinery } from './entities/machinery.entity';
 import { Report } from './entities/report.entity';
 import { RentalReport } from './entities/rental-report.entity';
@@ -13,6 +13,20 @@ import { UpdateMachineryDto } from './dto/update-machinery.dto';
 import { MachineryRole } from './entities/machinery-role.entity';
 import { Operator } from 'src/operators/entities/operator.entity';
 
+
+function normEstacion(s?: string | null) {
+  if (!s) return null;
+  const m = String(s).match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/);
+  if (!m) return String(s).replace(/\s+/g, ''); // deja lo que venga, sin espacios
+  return `${Number(m[1])}+${Number(m[2])}`;
+}
+
+function splitEstacion(s?: string | null) {
+  const m = String(s || '').match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/);
+  if (!m) return null;
+  return { desde: Number(m[1]), hasta: Number(m[2]) };
+}
+
 @Injectable()
 export class MachineryService {
 
@@ -24,6 +38,24 @@ export class MachineryService {
     @InjectRepository(MachineryRole) private readonly roleRepo: Repository<MachineryRole>,
     @InjectRepository(Operator) private readonly opRepo: Repository<Operator>,
   ) {}
+
+  
+async getLastCounters(maquinariaId: number) {
+  const last = await this.reportRepo.findOne({
+    where: { maquinaria: { id: maquinariaId } },
+    order: { fecha: 'DESC', id: 'DESC' },
+  });
+
+  const est = last?.estacion ?? null;
+  const pair = splitEstacion(est);
+  const hasta = pair?.hasta ?? null;
+
+  return {
+    horimetro: last?.horimetro ?? null,
+    estacion: est,          // 👈 string tipo "100+350"
+    estacionHasta: hasta,   // 👈 num, opcional para precargar “siguiente”
+  };
+}
 
 async createMachinery(dto: CreateMachineryDto) {
   if (!dto?.tipo) throw new BadRequestException('El campo "tipo" es obligatorio.');
@@ -52,9 +84,8 @@ async createMachinery(dto: CreateMachineryDto) {
   return this.machineryRepo.findOne({
     where: { id: machinery.id },
     relations: { roles: true },
-  });
+  }); 
 }
-
 
   async findAllMachinery() {
   // Puedes devolver tal cual con roles (entidades)...
@@ -70,21 +101,26 @@ async createMachinery(dto: CreateMachineryDto) {
 }
 
 
-// machinery.service.ts
+
 async createReport(dto: CreateReportDto) {
-  const {
-    operadorId,
-    maquinariaId,
-    combustible,
-    diesel,
-    ...rest
-  } = dto as any;
+  const { operadorId, maquinariaId, combustible, diesel } = dto as any;
 
-  // helper: "" -> null
   const nn = (v: any) =>
-    typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v ?? null;
+    typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : v ?? null;
 
-  // valida y carga relaciones
+  const to24h = (s?: string | null) => {
+    if (!s) return s ?? null;
+    const m = String(s).trim().match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
+    if (!m) return s; // ya viene "HH:mm"
+    let hh = Number(m[1]) % 12;
+    const mm = m[2];
+    if (m[3].toUpperCase() === 'PM') hh += 12;
+    return `${String(hh).padStart(2, '0')}:${mm}`;
+  };
+
+  
+
+  // === Relaciones ===
   let operador = null;
   if (operadorId) {
     operador = await this.opRepo.findOne({ where: { id: Number(operadorId) } });
@@ -97,26 +133,63 @@ async createReport(dto: CreateReportDto) {
     if (!maquinaria) throw new BadRequestException(`Maquinaria ${maquinariaId} no existe`);
   }
 
-  const entity = this.reportRepo.create({
-    ...rest,
-    // normaliza campos de texto que a veces vienen "":
-    estacion: nn(rest.estacion),
-    codigoCamino: nn(rest.codigoCamino),
-    distrito: nn(rest.distrito),
-    tipoActividad: nn(rest.tipoActividad),
-    placaCarreta: nn(rest.placaCarreta),
-    horaInicio: nn(rest.horaInicio),
-    horaFin: nn(rest.horaFin),
+  // === Detalles (igual a como lo tenías) ===
+  const d = dto.detalles ?? {};
+  const detalles: Record<string, any> = {
+    ...d,
+    variante: nn(d.variante),
+    tipoMaquinaria: nn(d.tipoMaquinaria),
+    placa: nn(d.placa),
+    tipoMaterial: nn(d.tipoMaterial),
+    cantidadMaterial: d.cantidadMaterial != null ? Number(d.cantidadMaterial) : null,
+    fuente: nn(d.fuente),
+    boleta: nn(d.boleta),
+    cantidadLiquido: d.cantidadLiquido != null ? Number(d.cantidadLiquido) : null,
+    placaCarreta: nn(d.placaCarreta),
+    destino: nn(d.destino),
+    tipoCarga: nn(d.tipoCarga),
+    placaMaquinariaLlevada: nn(d.placaMaquinariaLlevada),
+    horaInicio: to24h(nn(d.horaInicio)),
+    horaFin: to24h(nn(d.horaFin)),
+  };
 
-    // diesel centralizado
+  // ✅ Normaliza la estación tipo "100+350"
+  const estacion = normEstacion((dto as any).estacion);
+  const pair = splitEstacion(estacion);
+  if (pair && pair.hasta < pair.desde) {
+    throw new BadRequestException('La estación “hasta” no puede ser menor que “desde”.');
+  }
+
+  // === Construye la entidad con SOLO columnas existentes ===
+  const entityLike: DeepPartial<Report> = {
+    fecha: dto.fecha ? (new Date(dto.fecha) as any) : null,
+    tipoActividad: nn((dto as any).tipoActividad ?? (dto as any).actividad),
+
+    estacion,                               // 👈 guardar la estación aquí
+    codigoCamino: nn((dto as any).codigoCamino),
+    distrito: nn((dto as any).distrito),
+
+    horimetro: (dto as any).horimetro ?? null,
+
+    kilometraje: (dto as any).kilometraje ?? null,
     diesel: diesel ?? combustible ?? null,
+    horasOrd: (dto as any).horasOrd ?? null,
+    horasExt: (dto as any).horasExt ?? null,
+    viaticos: (dto as any).viaticos ?? null,
 
+    placaCarreta: nn((dto as any).placaCarreta ?? d.placaCarreta),
+    horaInicio: to24h(nn((dto as any).horaInicio ?? d.horaInicio)),
+    horaFin: to24h(nn((dto as any).horaFin ?? d.horaFin)),
+
+    detalles,
     operador,
     maquinaria,
-  });
+  };
 
+  const entity = this.reportRepo.create(entityLike);
   return this.reportRepo.save(entity);
 }
+
 
 findAllReports() {
   return this.reportRepo.find({
@@ -254,6 +327,15 @@ async remove(id: number) {
    }
 
 }
+
+
+
+
+
+
+
+
+
 
 
 

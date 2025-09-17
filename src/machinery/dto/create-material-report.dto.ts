@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, Matches, ValidateIf } from 'class-validator';
 
 export class CreateMaterialReportDto {
   @IsString()
@@ -10,8 +10,13 @@ export class CreateMaterialReportDto {
   @IsString()
   fuente: string; // Palo de Arco / KYLCSA
 
-  @IsString()
-  boleta: string;
+  @ValidateIf(o =>
+  (o?.tipoMaquinaria || '').toLowerCase() === 'vagoneta' &&
+  (o?.tipoActividad || o?.detalles?.tipoMaterial || '').toLowerCase() === 'material' &&
+  Number(o?.combustible) > 0
+  )
+  @Matches(/^\d{6}$/)
+  boleta?: string;
 
   @IsDateString()
   fecha: string;

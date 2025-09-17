@@ -22,9 +22,6 @@ export class Report {
   distrito: string;
 
   @Column({ type: 'float', nullable: true })
-  horimetro: number;
-
-  @Column({ type: 'float', nullable: true })
   kilometraje: number;
 
   @Column({ type: 'float', nullable: true })
@@ -52,17 +49,15 @@ export class Report {
   @Column({ type: 'varchar', length: 64, nullable: true })
   tipoActividad?: string; // si no existía
 
+  @Column('int', { nullable: true })
+  horimetro: number | null;
+
+
+
   @Column("json", { nullable: true })
   detalles: Record<string, any>;
 
-  // @ManyToOne(() => Operator, (operator) => operator.reports)
-  // operadorId: Operator;
 
-  // @ManyToOne(() => Machinery, (machinery) => machinery.reports)
-  // maquinariaId: Machinery;
-
-  // @OneToMany(() => MaterialReport, (material) => material.report)
-  // materiales: MaterialReport[];
 
   // 👇 Relación correcta + nombre de columna controlado
   @ManyToOne(() => Operator, (operator) => operator.reports, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })

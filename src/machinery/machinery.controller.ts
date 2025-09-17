@@ -31,10 +31,12 @@ export class MachineryController {
 
   // ---------- Maquinarias ----------
   @Post()
-  @Roles('ingeniero') // ajusta si quieres permitir a otros
+  @Roles('admin') // ajusta si quieres permitir a otros
   createMachinery(@Body() dto: CreateMachineryDto) {
     return this.service.createMachinery(dto);
   }
+
+
 
   @Get()
   findAllMachinery() {
@@ -46,8 +48,16 @@ export class MachineryController {
     return this.service.findOne(id);
   }
 
+  //ULTIMO HORIMETRO, ULTIMA ESTACION
+  // machinery.controller.ts
+@Get(':id/last-counters')
+getLastCounters(@Param('id', ParseIntPipe) id: number) {
+  return this.service.getLastCounters(id);
+}
+
+
   @Patch(':id')
-  @Roles('ingeniero')
+  @Roles('admin')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMachineryDto,
@@ -56,7 +66,7 @@ export class MachineryController {
   }
 
   @Delete(':id')
-  @Roles('ingeniero')
+  @Roles('admin')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
@@ -71,6 +81,7 @@ export class MachineryController {
   findAllReports() {
     return this.service.findAllReports();
   }
+  
 
   @Get('report/by-operator')
   findReportsByOperatorAndDate(
@@ -120,19 +131,19 @@ export class MachineryController {
 
   // ---------- Resúmenes (ej. dashboards) ----------
   @Get('report/summary/materials')
-  @Roles('ingeniero', 'superadmin')
+  @Roles('admin', 'superadmin')
   getMaterialSummary(@Query('month') month: number) {
     return this.service.getMaterialSummaryByMonth(month);
   }
 
   @Get('report/summary/operadores')
-  @Roles('ingeniero', 'superadmin')
+  @Roles('admin', 'superadmin')
   getHorasOperador(@Query('month') month: number) {
     return this.service.getHorasMaquinaByOperador(month);
   }
 
   @Get('rental-report/summary')
-  @Roles('ingeniero', 'superadmin')
+  @Roles('admin', 'superadmin')
   getRentalSummary(@Query('month') month: number) {
     return this.service.getRentalSummaryByMonth(month);
   }
