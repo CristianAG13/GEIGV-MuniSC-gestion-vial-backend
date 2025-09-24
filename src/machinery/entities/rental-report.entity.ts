@@ -33,4 +33,7 @@ export class RentalReport {
    //👇 ESTA ES LA COLUMNA QUE FALTABA
   @Column({ type: 'varchar', length: 32, nullable: true }) // pon nullable:false cuando ya tengas datos
   fuente: string; // 'Kilcsa' | 'Palo de Arco'
+
+
+  
 }
