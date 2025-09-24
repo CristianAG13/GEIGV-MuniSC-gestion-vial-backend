@@ -339,6 +339,27 @@ async updateMachinery(id: number, dto: UpdateMachineryDto) {
   return this.machineryRepo.findOne({ where: { id }, relations: { roles: true } });
 }
 
+findReports({ tipo, start, end }: { tipo?: string; start?: string; end?: string }) {
+  const where: any = {};
+
+  if (tipo) {
+    // filtra por tipo de maquinaria
+    where.maquinaria = { tipo };
+  }
+
+  if (start || end) {
+    const s = start ? new Date(start) : new Date('1970-01-01');
+    const e = end ? new Date(end) : new Date('9999-12-31');
+    where.fecha = Between(s, e);
+  }
+
+  return this.reportRepo.find({
+    where,
+    relations: { operador: true, maquinaria: true, materiales: true },
+    order: { fecha: 'DESC', id: 'DESC' },
+  });
+}
+
 async remove(id: number) {
     await this.machineryRepo.delete(id); // ON DELETE CASCADE borra roles
     return true;
