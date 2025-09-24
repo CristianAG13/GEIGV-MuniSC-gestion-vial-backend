@@ -147,6 +147,16 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
   getRentalSummary(@Query('month') month: number) {
     return this.service.getRentalSummaryByMonth(month);
   }
+
+  @Get('report/search')
+findReports(
+  @Query('tipo') tipo?: string,
+  @Query('start') start?: string, // YYYY-MM-DD
+  @Query('end') end?: string,     // YYYY-MM-DD
+) {
+  return this.service.findReports({ tipo, start, end });
+}
+
 }
 
 
