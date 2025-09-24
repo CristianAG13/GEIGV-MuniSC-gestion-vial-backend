@@ -34,7 +34,6 @@ export class RentalReport {
    //👇 ESTA ES LA COLUMNA QUE FALTABA
   @Column({ type: 'varchar', length: 32, nullable: true }) // pon nullable:false cuando ya tengas datos
   fuente: string; // 'Kilcsa' | 'Palo de Arco'
-<<<<<<< HEAD
   
   @Column({ nullable: true })
   operadorId: number;
@@ -42,9 +41,4 @@ export class RentalReport {
   @ManyToOne(() => Operator, { nullable: true })
   @JoinColumn({ name: 'operadorId' })
   operador: Operator;
-=======
-
-
-  
->>>>>>> 3f61e1d4dc82bef5c160fb3275a4998eaab3b56f
 }
