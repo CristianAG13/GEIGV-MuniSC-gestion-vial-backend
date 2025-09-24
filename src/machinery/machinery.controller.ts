@@ -112,6 +112,11 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
   findAllRentalReports() {
     return this.service.findAllRentalReports();
   }
+  
+  @Get('rental-report/by-operator')
+  findRentalReportsByOperator(@Query('operadorId', ParseIntPipe) operadorId: number) {
+    return this.service.findRentalReportsByOperator(operadorId);
+  }
 
   // ---------- Reportes de materiales ----------
   @Post('material-report')

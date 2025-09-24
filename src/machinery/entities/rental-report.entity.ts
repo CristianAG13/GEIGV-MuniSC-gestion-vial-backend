@@ -1,5 +1,6 @@
 import { IsString } from 'class-validator';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Operator } from '../../operators/entities/operator.entity';
 
 @Entity('rental_reports')
 export class RentalReport {
@@ -33,4 +34,11 @@ export class RentalReport {
    //👇 ESTA ES LA COLUMNA QUE FALTABA
   @Column({ type: 'varchar', length: 32, nullable: true }) // pon nullable:false cuando ya tengas datos
   fuente: string; // 'Kilcsa' | 'Palo de Arco'
+  
+  @Column({ nullable: true })
+  operadorId: number;
+  
+  @ManyToOne(() => Operator, { nullable: true })
+  @JoinColumn({ name: 'operadorId' })
+  operador: Operator;
 }

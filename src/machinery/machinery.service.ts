@@ -234,12 +234,25 @@ findCisternaReports() {
 
 
   // Reportes de alquiler
-  createRentalReport(dto: CreateRentalReportDto) {
+  async createRentalReport(dto: CreateRentalReportDto) {
+    // Check if there's an operadorId and validate it exists
+    if (dto.operadorId) {
+      const operator = await this.opRepo.findOne({ where: { id: Number(dto.operadorId) } });
+      if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
+    }
+    
     return this.rentalRepo.save(dto);
   }
 
   findAllRentalReports() {
-    return this.rentalRepo.find();
+    return this.rentalRepo.find({ relations: ['operador'] });
+  }
+  
+  findRentalReportsByOperator(operadorId: number) {
+    return this.rentalRepo.find({ 
+      where: { operadorId },
+      relations: ['operador']
+    });
   }
 
   // Reportes de materiales
@@ -282,10 +295,12 @@ getHorasMaquinaByOperador(month: number) {
 getRentalSummaryByMonth(month: number) {
   return this.rentalRepo
     .createQueryBuilder("rr")
+    .leftJoin("rr.operador", "o")
     .select("rr.tipoMaquinaria", "tipo")
     .addSelect("SUM(rr.horas)", "totalHoras")
+    .addSelect("o.name", "operadorNombre")
     .where("MONTH(rr.fecha) = :month", { month })
-    .groupBy("rr.tipoMaquinaria")
+    .groupBy("rr.tipoMaquinaria, o.name")
     .getRawMany();
 }
 

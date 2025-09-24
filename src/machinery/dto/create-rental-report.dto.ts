@@ -5,6 +5,10 @@ export class CreateRentalReportDto {
   tipoMaquinaria: string;
 
   @IsOptional()
+  @IsNumber()
+  operadorId?: number;
+
+  @IsOptional()
   @IsString()
   placa?: string;
 
