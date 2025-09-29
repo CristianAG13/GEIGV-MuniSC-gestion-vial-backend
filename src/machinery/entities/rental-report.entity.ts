@@ -30,10 +30,15 @@ export class RentalReport {
 
   @Column({ type: 'date', nullable: true})
   fecha: Date;
+
+
   
    //👇 ESTA ES LA COLUMNA QUE FALTABA
   @Column({ type: 'varchar', length: 32, nullable: true }) // pon nullable:false cuando ya tengas datos
   fuente: string; // 'Kilcsa' | 'Palo de Arco'
+  
+  @Column({ type: 'boolean', nullable: true })
+  esAlquiler: boolean;
   
   @Column({ nullable: true })
   operadorId: number;
