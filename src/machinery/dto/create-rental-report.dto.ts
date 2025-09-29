@@ -40,7 +40,11 @@ export class CreateRentalReportDto {
   @IsDateString()
   fecha?: string;
 
- @IsString()
+  @IsOptional()
+  @IsString()
   @IsIn(['Kilcsa', 'Palo de Arco'])
-  fuente: string;
+  fuente?: string;
+
+  @IsOptional()
+  esAlquiler?: boolean;
 }
