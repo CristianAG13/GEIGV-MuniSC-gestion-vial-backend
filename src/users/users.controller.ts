@@ -108,4 +108,11 @@ export class UsersController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);
   }
+
+  @Delete(':id/force')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin') // Solo superadmin puede forzar eliminación
+  forceRemove(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.forceRemove(id);
+  }
 }

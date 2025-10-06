@@ -374,21 +374,34 @@ export class MachineryService {
   const row = await this.reportRepo.findOne({
     where: { id },
     withDeleted: true,
+    relations: { operador: true, maquinaria: true, materiales: true },
   });
   if (!row) throw new NotFoundException('Reporte municipal no existe');
 
-  // (opcional) si NO quieres mantener motivo y quién de la eliminación anterior:
-  await this.reportRepo.update(id, { deleteReason: null, deletedById: null }); // <-- OPCIONAL
+  // Capturar información antes de restaurar
+  const restoreInfo = {
+    wasDeletedAt: row.deletedAt,
+    deleteReason: row.deleteReason,
+    deletedById: row.deletedById,
+    restoredAt: new Date(),
+  };
+
+  // Limpiar campos de eliminación
+  await this.reportRepo.update(id, { deleteReason: null, deletedById: null });
 
   await this.reportRepo.restore(id); // limpia deletedAt
-  // opcional: mantener el motivo (recomendado) o limpiarlo:
-  // row.deleteReason = null; await this.reportRepo.save(row);
 
-  // retorna la fila restaurada con relaciones para refrescar la UI si quieres
-  return this.reportRepo.findOne({
+  // retorna la fila restaurada con relaciones e información de restauración
+  const restoredReport = await this.reportRepo.findOne({
     where: { id },
     relations: { operador: true, maquinaria: true, materiales: true },
   });
+
+  return {
+    ...restoredReport,
+    restoreInfo,
+    message: `Reporte municipal ID ${id} restaurado exitosamente`,
+  };
 }
 
   // ========== Reportes de alquiler ==========
@@ -503,19 +516,34 @@ async restoreRental(id: number) {
   const row = await this.rentalRepo.findOne({
     where: { id },
     withDeleted: true,
+    relations: ['operador'],
   });
   if (!row) throw new NotFoundException('Reporte de alquiler no existe');
 
-  // (opcional) limpiar motivo/quién previos
-  await this.rentalRepo.update(id, { deleteReason: null, deletedById: null });   // <-- OPCIONAL
+  // Capturar información antes de restaurar
+  const restoreInfo = {
+    wasDeletedAt: row.deletedAt,
+    deleteReason: row.deleteReason,
+    deletedById: row.deletedById,
+    restoredAt: new Date(),
+  };
+
+  // Limpiar campos de eliminación
+  await this.rentalRepo.update(id, { deleteReason: null, deletedById: null });
   
   await this.rentalRepo.restore(id);
-  // opcional: row.deleteReason = null; await this.rentalRepo.save(row);
 
-  return this.rentalRepo.findOne({
+  // Retornar reporte restaurado con información completa
+  const restoredReport = await this.rentalRepo.findOne({
     where: { id },
     relations: ['operador'],
   });
+
+  return {
+    ...restoredReport,
+    restoreInfo,
+    message: `Reporte de alquiler ID ${id} restaurado exitosamente`,
+  };
 }
 
   // ========== Reportes de materiales ==========

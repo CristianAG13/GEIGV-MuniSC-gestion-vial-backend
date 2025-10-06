@@ -9,7 +9,8 @@ import {
   ParseIntPipe,
   UseGuards,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  UseInterceptors,
 } from '@nestjs/common';
 import { OperatorsService } from './operators.service';
 import { CreateOperatorDto } from './dto/create-operator.dto';
@@ -17,9 +18,12 @@ import { UpdateOperatorDto } from './dto/update-operator.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { AuditInterceptor, Audit } from '../audit/interceptors/audit.interceptor';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity';
 
 @Controller('operators')
 @UseGuards(JwtAuthGuard)
+@UseInterceptors(AuditInterceptor)
 export class OperatorsController {
   constructor(private readonly operatorsService: OperatorsService) {}
 
@@ -27,6 +31,7 @@ export class OperatorsController {
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.CREATED)
+  @Audit(AuditEntity.OPERADORES, AuditAction.CREATE, 'Operador creado')
   create(@Body() createOperatorDto: CreateOperatorDto) {
     return this.operatorsService.create(createOperatorDto);
   }
@@ -62,6 +67,7 @@ export class OperatorsController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
+  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE, 'Operador actualizado')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOperatorDto: UpdateOperatorDto,
@@ -73,6 +79,7 @@ export class OperatorsController {
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Audit(AuditEntity.OPERADORES, AuditAction.DELETE, 'Operador eliminado')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.remove(id);
   }
@@ -80,6 +87,7 @@ export class OperatorsController {
   @Patch(':id/associate-user/:userId')
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
+  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE, 'Operador asociado con usuario')
   associateWithUser(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -90,6 +98,7 @@ export class OperatorsController {
   @Patch(':id/remove-user-association')
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
+  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE, 'Asociación de usuario removida del operador')
   removeUserAssociation(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.removeUserAssociation(id);
   }

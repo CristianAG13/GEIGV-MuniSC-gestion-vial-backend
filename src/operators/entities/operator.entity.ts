@@ -79,7 +79,7 @@ export class Operator {
   updatedAt: Date;
 
   // Relación con User
-  @OneToOne(() => User, { nullable: true })
+  @OneToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

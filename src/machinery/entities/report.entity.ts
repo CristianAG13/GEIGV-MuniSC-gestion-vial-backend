@@ -70,7 +70,7 @@ export class Report {
  @Column({ name: 'deleted_by_id', type: 'int', nullable: true })
   deletedById?: number | null;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
 @JoinColumn({ name: 'deleted_by_id' })
 deletedBy?: User | null; 
 

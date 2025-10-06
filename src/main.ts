@@ -10,11 +10,14 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Elimina propiedades que no están en el DTO
-      forbidNonWhitelisted: true, // Lanza error si hay propiedades no permitidas
+      forbidNonWhitelisted: false, // Cambiar a false para ser más permisivo con query params
       transform: true, // Transforma automáticamente los tipos
       transformOptions: {
         enableImplicitConversion: true,
       },
+      skipMissingProperties: true, // Omitir propiedades faltantes
+      skipNullProperties: true, // Omitir propiedades null
+      skipUndefinedProperties: true, // Omitir propiedades undefined
     }),
   );
 

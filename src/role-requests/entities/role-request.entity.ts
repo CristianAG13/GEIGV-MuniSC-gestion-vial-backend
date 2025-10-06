@@ -53,7 +53,7 @@ export class RoleRequest {
   updatedAt: Date;
 
   // Relaciones
-  @ManyToOne(() => User, user => user.id)
+  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -61,7 +61,7 @@ export class RoleRequest {
   @JoinColumn({ name: 'roleId' })
   requestedRole: Role;
 
-  @ManyToOne(() => User, user => user.id, { nullable: true })
+  @ManyToOne(() => User, user => user.id, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'reviewedBy' })
   reviewer: User;
 }
