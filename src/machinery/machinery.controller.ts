@@ -1,5 +1,4 @@
 
-// machinery.controller.ts
 import {
   Controller,
   Post,
@@ -11,6 +10,7 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 
 import { MachineryService } from './machinery.service';
@@ -29,14 +29,12 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 export class MachineryController {
   constructor(private readonly service: MachineryService) {}
 
-  // ---------- Maquinarias ----------
+ // ---------- MAQUINARIAS ----------
   @Post()
-  @Roles('admin') // ajusta si quieres permitir a otros
+  @Roles('admin')
   createMachinery(@Body() dto: CreateMachineryDto) {
     return this.service.createMachinery(dto);
   }
-
-
 
   @Get()
   findAllMachinery() {
@@ -48,15 +46,7 @@ export class MachineryController {
     return this.service.findOne(id);
   }
 
-  //ULTIMO HORIMETRO, ULTIMA ESTACION
-  // machinery.controller.ts
-@Get(':id/last-counters')
-getLastCounters(@Param('id', ParseIntPipe) id: number) {
-  return this.service.getLastCounters(id);
-}
-
-
-  @Patch(':id')
+  @Patch(':id(\\d+)')
   @Roles('admin')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -65,13 +55,41 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
     return this.service.updateMachinery(id, dto);
   }
 
-  @Delete(':id')
+  @Delete(':id(\\d+)')
   @Roles('admin')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
 
-  // ---------- Reportes municipales ----------
+  // GET /machinery/:id/last-counters?codigoCamino=267
+  @Get(':id(\\d+)/last-counters')
+  getLastCounters(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('codigoCamino') codigoCamino?: string,
+  ) {
+    return this.service.getLastCounters(id, codigoCamino);
+  }
+
+
+  // ========= REPORTES MUNICIPALES =========
+
+  // ESTÁTICAS PRIMERO
+  @Get('report/deleted')
+  @Roles('admin','superadmin')
+  getDeletedMunicipal() {
+    return this.service.getDeletedMunicipal();
+  }
+
+  @Get('report/search')
+  findReports(
+    @Query('tipo') tipo?: string,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+  ) {
+    return this.service.findReports({ tipo, start, end });
+  }
+
+  // CRUD base
   @Post('report')
   createReport(@Body() dto: CreateReportDto) {
     return this.service.createReport(dto);
@@ -81,28 +99,43 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
   findAllReports() {
     return this.service.findAllReports();
   }
-  
 
-  @Get('report/by-operator')
-  findReportsByOperatorAndDate(
-    @Query('operadorId') operadorId: number,
-    @Query('start') start: string,
-    @Query('end') end: string,
+  // DINÁMICAS AL FINAL + regex de dígitos
+  @Get('report/:id(\\d+)')
+  findReportById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findReportById(id);
+  }
+
+  @Patch('report/:id(\\d+)')
+  updateReport(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: any,
   ) {
-    return this.service.findReportsByOperatorAndDate(operadorId, start, end);
+    return this.service.updateReport(id, dto);
   }
 
-  @Get('report/by-type')
-  findReportsByMachineryType(@Query('tipo') tipo: string) {
-    return this.service.findReportsByMachineryType(tipo);
+  @Delete('report/:id(\\d+)')
+  removeMunicipal(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: string } = {},
+    @Req() req: any, 
+  ) {
+    const userId = req?.user?.id ?? req?.user?.sub ?? null;  // <-- AÑADIR
+  return this.service.removeMunicipal(id, body?.reason ?? null, userId); // <-- PASAR userId
   }
 
-  @Get('report/cisterna')
-  findCisternaReports() {
-    return this.service.findCisternaReports();
+  @Patch('report/:id(\\d+)/restore')
+  @Roles('admin','superadmin')
+  restoreMunicipal(@Param('id', ParseIntPipe) id: number) {
+  return this.service.restoreMunicipal(id);
   }
 
-  // ---------- Reportes de alquiler ----------
+  // ========= REPORTES DE ALQUILER =========
+
+  // (si vas a listar eliminados de alquiler, agrega aquí rental-report/deleted)
+  // @Get('rental-report/deleted')
+  // getDeletedRental() { return this.service.getDeletedRental(); }
+
   @Post('rental-report')
   createRentalReport(@Body() dto: CreateRentalReportDto) {
     return this.service.createRentalReport(dto);
@@ -112,13 +145,43 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
   findAllRentalReports() {
     return this.service.findAllRentalReports();
   }
-  
-  @Get('rental-report/by-operator')
-  findRentalReportsByOperator(@Query('operadorId', ParseIntPipe) operadorId: number) {
-    return this.service.findRentalReportsByOperator(operadorId);
+
+  @Get('rental-report/:id(\\d+)')
+  findRentalReportById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findRentalReportById(id);
   }
 
-  // ---------- Reportes de materiales ----------
+  @Patch('rental-report/:id(\\d+)')
+  updateRentalReport(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: any,
+  ) {
+    return this.service.updateRentalReport(id, dto);
+  }
+
+  @Delete('rental-report/:id(\\d+)')
+  removeRental(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: string } = {},
+     @Req() req: any, 
+  ) {
+    const userId = req?.user?.id ?? req?.user?.sub ?? null;  // <-- AÑADIR
+  return this.service.removeRental(id, body?.reason ?? null, userId); // <-- PASAR userId
+  }
+
+   @Get('rental-report/deleted')
+  @Roles('admin','superadmin')
+  getDeletedRental() {
+    return this.service.getDeletedRental();
+  }
+
+  @Patch('rental-report/:id(\\d+)/restore')
+  @Roles('admin','superadmin')
+  restoreRental(@Param('id', ParseIntPipe) id: number) {
+  return this.service.restoreRental(id);
+}
+  
+  // ---------- REPORTES DE MATERIALES ----------
   @Post('material-report')
   createMaterialReport(@Body() dto: CreateMaterialReportDto) {
     return this.service.createMaterialReport(dto);
@@ -134,7 +197,7 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
     return this.service.findMaterialsBySource(source);
   }
 
-  // ---------- Resúmenes (ej. dashboards) ----------
+  // ---------- RESÚMENES ----------
   @Get('report/summary/materials')
   @Roles('admin', 'superadmin')
   getMaterialSummary(@Query('month') month: number) {
@@ -152,16 +215,5 @@ getLastCounters(@Param('id', ParseIntPipe) id: number) {
   getRentalSummary(@Query('month') month: number) {
     return this.service.getRentalSummaryByMonth(month);
   }
-
-  @Get('report/search')
-findReports(
-  @Query('tipo') tipo?: string,
-  @Query('start') start?: string, // YYYY-MM-DD
-  @Query('end') end?: string,     // YYYY-MM-DD
-) {
-  return this.service.findReports({ tipo, start, end });
 }
-
-}
-
 
