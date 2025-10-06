@@ -26,15 +26,19 @@ export class CreateRentalReportDto {
 
   @IsOptional()
   @IsString()
-  estacion?: string;
+  estacion?: string; // si ocupas "N+M", puedes copiar el @Matches del municipal
 
-  @ValidateIf(o =>
-  (o?.tipoMaquinaria || '').toLowerCase() === 'vagoneta' &&
-  (o?.tipoActividad || o?.detalles?.tipoMaterial || '').toLowerCase() === 'material' &&
-  Number(o?.combustible) > 0
-  )
+  // Boleta normal (sólo cuando no es Ríos/Tajo)
+  @ValidateIf(o => !['ríos','rios','tajo'].includes(String(o?.fuente || '').toLowerCase()))
+  @IsOptional()
   @Matches(/^\d{6}$/)
   boleta?: string;
+
+  // NUEVO: boleta especial para KYLCSA
+  @ValidateIf(o => String(o?.fuente || '').toUpperCase() === 'KYLCSA')
+  @IsOptional()
+  @IsString()
+  boletaKylcsa?: string;
 
   @IsOptional()
   @IsDateString()
@@ -42,8 +46,11 @@ export class CreateRentalReportDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['Kilcsa', 'Palo de Arco'])
+  @IsIn(['KYLCSA','Palo de Arco','Ríos','Tajo'], { message: 'fuente inválida' })
   fuente?: string;
+
+  // “Extras” espejo de municipal pero los mandamos en `detalles`
+  @IsOptional() detalles?: Record<string, any>;
 
   @IsOptional()
   esAlquiler?: boolean;

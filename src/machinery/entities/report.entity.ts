@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, RelationId } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, RelationId, DeleteDateColumn } from 'typeorm';
 import { Operator } from '../../operators/entities/operator.entity';
 import { Machinery } from './machinery.entity';
 import { MaterialReport } from './material-report.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Entity('reports')
 export class Report {
@@ -58,6 +59,20 @@ export class Report {
   detalles: Record<string, any>;
 
 
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt?: Date | null;
+
+  @Column({ name: 'delete_reason', type: 'text', nullable: true })
+  deleteReason?: string | null;
+
+
+// opcional si quieres guardar quién borró
+ @Column({ name: 'deleted_by_id', type: 'int', nullable: true })
+  deletedById?: number | null;
+
+  @ManyToOne(() => User, { nullable: true })
+@JoinColumn({ name: 'deleted_by_id' })
+deletedBy?: User | null; 
 
   // 👇 Relación correcta + nombre de columna controlado
   @ManyToOne(() => Operator, (operator) => operator.reports, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
@@ -70,6 +85,7 @@ export class Report {
 
   @OneToMany(() => MaterialReport, (material) => material.report)
   materiales: MaterialReport[];
+
 }
 
 

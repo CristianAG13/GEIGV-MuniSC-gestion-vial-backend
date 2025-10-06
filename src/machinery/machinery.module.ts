@@ -8,9 +8,10 @@ import { RentalReport } from './entities/rental-report.entity';
 import { MaterialReport } from './entities/material-report.entity';
 import { MachineryRole } from './entities/machinery-role.entity';
 import { Operator } from 'src/operators/entities/operator.entity';
+import { User } from 'src/users/entities/user.entity'; // ruta real
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Machinery, Report, RentalReport, MaterialReport, MachineryRole, Operator,])],
+  imports: [TypeOrmModule.forFeature([Machinery, Report, RentalReport, MaterialReport, MachineryRole, Operator,User])],
   controllers: [MachineryController],
   providers: [MachineryService],
 })
