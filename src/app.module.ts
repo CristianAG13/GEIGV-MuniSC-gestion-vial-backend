@@ -11,6 +11,7 @@ import { RolesModule } from './roles/roles.module';
 import { RoleRequestsModule } from './role-requests/role-requests.module';
 import { OperatorsModule } from './operators/operators.module';
 import { MachineryModule } from './machinery/machinery.module';
+import { AuditModule } from './audit/audit.module';
 
 // Entidades
 import { User } from './users/entities/user.entity';
@@ -23,6 +24,7 @@ import { MaterialReport } from './machinery/entities/material-report.entity';
 import { RentalReport } from './machinery/entities/rental-report.entity';
 import { Report } from './machinery/entities/report.entity';
 import { MachineryRole } from './machinery/entities/machinery-role.entity';
+import { AuditLog } from './audit/entities/audit-log.entity';
 
 @Module({
   imports: [
@@ -41,12 +43,20 @@ import { MachineryRole } from './machinery/entities/machinery-role.entity';
         username: config.get<string>('DB_USERNAME'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_DATABASE'),
-        entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole],
+        entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog],
         synchronize: config.get('DB_SYNC') === 'true', // Ahora está configurado a true en .env
         logging: true,
-        timezone: 'Z',
+        timezone: '+00:00', // Forzar UTC
+        dateStrings: false, // Usar objetos Date en lugar de strings
         charset: 'utf8mb4',
         collation: 'utf8mb4_unicode_ci',
+        extra: {
+          connectionLimit: 10,
+          acquireTimeout: 30000,
+          timeout: 30000,
+          // Forzar zona horaria UTC en la sesión
+          initSql: "SET time_zone = '+00:00';"
+        },
       }),
     }),
 
@@ -56,6 +66,7 @@ import { MachineryRole } from './machinery/entities/machinery-role.entity';
     RoleRequestsModule,
     OperatorsModule,
     MachineryModule,
+    AuditModule,
   ],
   providers: [
     {

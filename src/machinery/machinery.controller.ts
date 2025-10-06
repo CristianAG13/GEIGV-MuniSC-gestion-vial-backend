@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import { MachineryService } from './machinery.service';
@@ -23,15 +24,19 @@ import { CreateMaterialReportDto } from './dto/create-material-report.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { AuditInterceptor, Audit } from '../audit/interceptors/audit.interceptor';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('machinery')
+@UseInterceptors(AuditInterceptor)
 export class MachineryController {
   constructor(private readonly service: MachineryService) {}
 
  // ---------- MAQUINARIAS ----------
   @Post()
   @Roles('admin')
+  @Audit(AuditEntity.TRANSPORTE, AuditAction.CREATE, 'Maquinaria creada')
   createMachinery(@Body() dto: CreateMachineryDto) {
     return this.service.createMachinery(dto);
   }
@@ -48,6 +53,7 @@ export class MachineryController {
 
   @Patch(':id(\\d+)')
   @Roles('admin')
+  @Audit(AuditEntity.TRANSPORTE, AuditAction.UPDATE, 'Maquinaria actualizada')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMachineryDto,
@@ -57,6 +63,7 @@ export class MachineryController {
 
   @Delete(':id(\\d+)')
   @Roles('admin')
+  @Audit(AuditEntity.TRANSPORTE, AuditAction.DELETE, 'Maquinaria eliminada')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
@@ -91,6 +98,7 @@ export class MachineryController {
 
   // CRUD base
   @Post('report')
+  @Audit(AuditEntity.REPORTES, AuditAction.CREATE, 'Reporte municipal creado')
   createReport(@Body() dto: CreateReportDto) {
     return this.service.createReport(dto);
   }
@@ -107,6 +115,7 @@ export class MachineryController {
   }
 
   @Patch('report/:id(\\d+)')
+  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE, 'Reporte municipal actualizado')
   updateReport(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: any,
@@ -115,6 +124,7 @@ export class MachineryController {
   }
 
   @Delete('report/:id(\\d+)')
+  @Audit(AuditEntity.REPORTES, AuditAction.DELETE, 'Reporte municipal eliminado')
   removeMunicipal(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { reason?: string } = {},
@@ -126,6 +136,7 @@ export class MachineryController {
 
   @Patch('report/:id(\\d+)/restore')
   @Roles('admin','superadmin')
+  @Audit(AuditEntity.REPORTES, AuditAction.RESTORE, 'Reporte municipal restaurado')
   restoreMunicipal(@Param('id', ParseIntPipe) id: number) {
   return this.service.restoreMunicipal(id);
   }
@@ -177,6 +188,7 @@ export class MachineryController {
 
   @Patch('rental-report/:id(\\d+)/restore')
   @Roles('admin','superadmin')
+  @Audit(AuditEntity.REPORTES, AuditAction.RESTORE, 'Reporte de alquiler restaurado')
   restoreRental(@Param('id', ParseIntPipe) id: number) {
   return this.service.restoreRental(id);
 }

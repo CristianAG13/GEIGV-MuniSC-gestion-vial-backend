@@ -12,6 +12,8 @@ import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AssignRolesDto } from './dto/assign-roles.dto';
+import { AuditService } from '../audit/audit.service';
+import { AuditEntity } from '../audit/entities/audit-log.entity';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +22,7 @@ export class UsersService {
     private userRepository: Repository<User>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+    private auditService: AuditService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -222,7 +225,95 @@ export class UsersService {
 
   async remove(id: number): Promise<void> {
     const user = await this.findOne(id);
-    await this.userRepository.remove(user);
+    
+    // Capturar datos para auditoría antes de eliminar
+    const userDataForAudit = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      lastname: user.lastname,
+      isActive: user.isActive,
+      roles: user.roles?.map(role => ({ id: role.id, name: role.name })) || [],
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastLogin: user.lastLogin,
+    };
+    
+    try {
+      // Intentar eliminar directamente (debería funcionar con las configuraciones onDelete)
+      await this.userRepository.remove(user);
+      
+      // Registrar en auditoría si la eliminación fue exitosa
+      try {
+        await this.auditService.logDelete(
+          AuditEntity.USUARIOS,
+          id.toString(),
+          userDataForAudit,
+          `Usuario ${user.email} eliminado`,
+        );
+      } catch (auditError) {
+        console.error('Error registrando auditoría de eliminación:', auditError);
+      }
+    } catch (error) {
+      // Si hay error por restricciones de integridad referencial, 
+      // podemos manejarlo manualmente si es necesario
+      if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === '23000') {
+        throw new BadRequestException(
+          'No se puede eliminar el usuario porque tiene registros relacionados. ' +
+          'Considere desactivar el usuario en lugar de eliminarlo.'
+        );
+      }
+      throw error;
+    }
+  }
+
+  async forceRemove(id: number): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['roles'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+
+    // Capturar datos para auditoría antes de eliminar
+    const userDataForAudit = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      lastname: user.lastname,
+      isActive: user.isActive,
+      roles: user.roles?.map(role => ({ id: role.id, name: role.name })) || [],
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastLogin: user.lastLogin,
+    };
+
+    // Usar una transacción para asegurar consistencia
+    await this.userRepository.manager.transaction(async transactionalEntityManager => {
+      // 1. Limpiar roles (tabla many-to-many)
+      if (user.roles && user.roles.length > 0) {
+        user.roles = [];
+        await transactionalEntityManager.save(User, user);
+      }
+
+      // 2. Las relaciones con onDelete: 'CASCADE' o 'SET NULL' se manejarán automáticamente
+      // 3. Eliminar el usuario
+      await transactionalEntityManager.remove(User, user);
+
+      // 4. Registrar en auditoría (después de eliminar exitosamente)
+      try {
+        await this.auditService.logDelete(
+          AuditEntity.USUARIOS,
+          id.toString(),
+          userDataForAudit,
+          `Usuario ${user.email} eliminado forzadamente`,
+        );
+      } catch (auditError) {
+        console.error('Error registrando auditoría de eliminación:', auditError);
+      }
+    });
   }
 
   async deactivate(id: number): Promise<User> {

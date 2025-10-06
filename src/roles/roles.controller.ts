@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   Query,
   BadRequestException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -18,8 +19,11 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { AuditInterceptor, Audit } from '../audit/interceptors/audit.interceptor';
+import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity';
 
 @Controller('roles')
+@UseInterceptors(AuditInterceptor)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
@@ -76,6 +80,7 @@ async createDefaultRolesPublic() {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
+  @Audit(AuditEntity.ROLES, AuditAction.CREATE, 'Rol creado')
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
@@ -114,6 +119,7 @@ async createDefaultRolesPublic() {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
+  @Audit(AuditEntity.ROLES, AuditAction.UPDATE, 'Rol actualizado')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -124,6 +130,7 @@ async createDefaultRolesPublic() {
   @Patch(':id/activate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
+  @Audit(AuditEntity.ROLES, AuditAction.UPDATE, 'Rol activado')
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.activate(id);
   }
@@ -131,6 +138,7 @@ async createDefaultRolesPublic() {
   @Patch(':id/deactivate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
+  @Audit(AuditEntity.ROLES, AuditAction.UPDATE, 'Rol desactivado')
   deactivate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.deactivate(id);
   }
@@ -138,6 +146,7 @@ async createDefaultRolesPublic() {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
+  @Audit(AuditEntity.ROLES, AuditAction.DELETE, 'Rol eliminado')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.remove(id);
   }
