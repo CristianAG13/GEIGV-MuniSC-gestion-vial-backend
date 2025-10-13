@@ -6,6 +6,7 @@ import { Transform } from 'class-transformer';
 export class CreateReportDto {
   @IsDateString()
   fecha: string;
+  
 
   @IsOptional()
   @IsString()

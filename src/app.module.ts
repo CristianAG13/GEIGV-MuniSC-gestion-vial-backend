@@ -12,7 +12,7 @@ import { RoleRequestsModule } from './role-requests/role-requests.module';
 import { OperatorsModule } from './operators/operators.module';
 import { MachineryModule } from './machinery/machinery.module';
 import { AuditModule } from './audit/audit.module';
-
+import { CatalogModule } from './catalog/catalog.module';
 // Entidades
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
@@ -25,6 +25,7 @@ import { RentalReport } from './machinery/entities/rental-report.entity';
 import { Report } from './machinery/entities/report.entity';
 import { MachineryRole } from './machinery/entities/machinery-role.entity';
 import { AuditLog } from './audit/entities/audit-log.entity';
+import { Source } from './catalog/entities/source.entity';
 
 @Module({
   imports: [
@@ -34,32 +35,37 @@ import { AuditLog } from './audit/entities/audit-log.entity';
     }),
 
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'mariadb',
-        host: config.get<string>('DB_HOST'),
-        port: Number(config.get<string>('DB_PORT')),
-        username: config.get<string>('DB_USERNAME'),
-        password: config.get<string>('DB_PASSWORD'),
-        database: config.get<string>('DB_DATABASE'),
-        entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog],
-        synchronize: config.get('DB_SYNC') === 'true', // Ahora está configurado a true en .env
-        logging: true,
-        timezone: '+00:00', // Forzar UTC
-        dateStrings: false, // Usar objetos Date en lugar de strings
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_unicode_ci',
-        extra: {
-          connectionLimit: 10,
-          acquireTimeout: 30000,
-          timeout: 30000,
-          // Forzar zona horaria UTC en la sesión
-          initSql: "SET time_zone = '+00:00';"
-        },
-      }),
-    }),
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => ({
+    type: 'mariadb',
+    host: config.get<string>('DB_HOST'),
+    port: Number(config.get<string>('DB_PORT')),
+    username: config.get<string>('DB_USERNAME'),
+    password: config.get<string>('DB_PASSWORD'),
+    database: config.get<string>('DB_DATABASE'),
+    entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog, Source],
+    synchronize: config.get('DB_SYNC') === 'true',
+    logging: true,
 
+    // ✅ Para evitar desfases de fecha/hora
+    timezone: 'Z',          // o '+00:00'
+    // Opcional: si quieres que los DATE salgan como string "YYYY-MM-DD"
+    // (útil para no convertir a Date en JS)
+    dateStrings: true,
+
+    charset: 'utf8mb4',
+    collation: 'utf8mb4_unicode_ci',
+
+    // ✅ Solo opciones válidas para mysql2
+    extra: {
+      connectionLimit: 10,
+      connectTimeout: 30000, // en ms
+      // (no uses acquireTimeout, timeout ni initSql)
+    },
+  }),
+}),
+    CatalogModule,
     RolesModule,
     UsersModule,
     AuthModule,
