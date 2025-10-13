@@ -10,8 +10,10 @@ export class Report {
   id: number;
 
   
-  @Column({ type: 'date', default: () => 'CURRENT_DATE' })
-  fecha: Date;
+ // ❗ Debe ser string y tipo 'date' (NO timestamp)
+@Column({ type: 'date', nullable: true })
+fecha!: string | null;
+
 
   @Column({ nullable: true })
   estacion: string;

@@ -19,6 +19,9 @@ import { UpdateMachineryDto } from './dto/update-machinery.dto';
 import { MachineryRole } from './entities/machinery-role.entity';
 import { Operator } from 'src/operators/entities/operator.entity';
 
+// ⬇️ IMPORTA LOS HELPERS DE FECHAS (asegúrate de la ruta)
+import { toISODate, daysAgoISO } from '../utils/date-only';
+
 /** Normaliza estación “N+M” */
 function normEstacion(s?: string | null) {
   if (!s) return null;
@@ -58,22 +61,6 @@ export class MachineryService {
   }
 
   // ========== Maquinarias ==========
-  // async getLastCounters(maquinariaId: number) {
-  //   const last = await this.reportRepo.findOne({
-  //     where: { maquinaria: { id: maquinariaId } },
-  //     order: { fecha: 'DESC', id: 'DESC' },
-  //   });
-
-  //   const est = last?.estacion ?? null;
-  //   const pair = splitEstacion(est);
-  //   const hasta = pair?.hasta ?? null;
-
-  //   return {
-  //     horimetro: last?.horimetro ?? null,
-  //     estacion: est,        // "100+350"
-  //     estacionHasta: hasta, // número útil para precargas
-  //   };
-  // }
 
   async getLastCounters(maquinariaId: number, codigoCamino?: string) {
     // último reporte global (para horímetro/kilometraje)
@@ -85,20 +72,20 @@ export class MachineryService {
     // último de ese camino (para estación) dentro de los últimos 30 días
     let lastByCaminoRecent: Report | null = null;
     if (codigoCamino) {
-      const d30 = new Date();
-      d30.setDate(d30.getDate() - 30);
+      const todayStr = toISODate(new Date());
+      const d30Str = daysAgoISO(30);
 
       lastByCaminoRecent = await this.reportRepo.findOne({
         where: {
           maquinaria: { id: maquinariaId } as any,
           codigoCamino: String(codigoCamino),
-          fecha: Between(d30, new Date()),
+          // 👇 STRINGS 'YYYY-MM-DD'
+          fecha: Between(d30Str, todayStr),
         },
         order: { fecha: 'DESC', id: 'DESC' },
       });
     }
 
-    // estacion guardada como "N+M" → devolver M (hasta en metros)
     const toHasta = (est?: string | null) => {
       const m = String(est || '').match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/);
       return m ? Number(m[2]) : null;
@@ -108,7 +95,7 @@ export class MachineryService {
       horimetro: lastAny?.horimetro ?? null,
       kilometraje: lastAny?.kilometraje ?? null,
       estacionHasta: toHasta(lastByCaminoRecent?.estacion) ?? null,
-      estacionUpdatedAt: lastByCaminoRecent?.fecha ?? null, // <-- nombre estable para el front
+      estacionUpdatedAt: lastByCaminoRecent?.fecha ?? null,
     };
   }
 
@@ -183,7 +170,7 @@ export class MachineryService {
   }
 
   async remove(id: number) {
-    await this.machineryRepo.delete(id); // ON DELETE CASCADE borra roles
+    await this.machineryRepo.delete(id);
     return true;
   }
 
@@ -230,7 +217,8 @@ export class MachineryService {
     }
 
     const entityLike: DeepPartial<Report> = {
-      fecha: dto.fecha ? (new Date(dto.fecha) as any) : null,
+      // 👇 guarda SIEMPRE como string 'YYYY-MM-DD'
+      fecha: dto.fecha ? toISODate(dto.fecha) : null,
       tipoActividad: this.nn((dto as any).tipoActividad ?? (dto as any).actividad),
       estacion,
       codigoCamino: this.nn((dto as any).codigoCamino),
@@ -295,30 +283,28 @@ export class MachineryService {
       report.detalles = { ...(report.detalles || {}), ...dto.detalles };
     }
 
-   const saved = await this.reportRepo.save(report);
-  // 👇 devolver completo (con relaciones) para que el front reemplace la fila
-  return this.reportRepo.findOne({
-    where: { id: saved.id },
-    relations: { operador: true, maquinaria: true, materiales: true },
-  });
+    const saved = await this.reportRepo.save(report);
+    return this.reportRepo.findOne({
+      where: { id: saved.id },
+      relations: { operador: true, maquinaria: true, materiales: true },
+    });
   }
 
   async getDeletedMunicipal() {
-  return this.reportRepo.find({
-    where: { deletedAt: Not(IsNull()) },
-    withDeleted: true,
-    relations: { operador: true, maquinaria: true, deletedBy: true }, // <- aquí
-    order: { deletedAt: 'DESC' }
-  });
-}
+    return this.reportRepo.find({
+      where: { deletedAt: Not(IsNull()) },
+      withDeleted: true,
+      relations: { operador: true, maquinaria: true, deletedBy: true },
+      order: { deletedAt: 'DESC' }
+    });
+  }
 
   async removeMunicipal(id: number, reason: string | null, userId: number | null) {
     const row = await this.reportRepo.findOne({ where: { id } });
     if (!row) throw new NotFoundException('Reporte municipal no existe');
 
-    // Soft delete guardando motivo (requiere @DeleteDateColumn y @Column deleteReason)
     row.deleteReason = reason ?? null;
-    row.deletedById  = userId ?? null; 
+    row.deletedById  = userId ?? null;
     await this.reportRepo.save(row);
     await this.reportRepo.softDelete(id);
 
@@ -327,10 +313,13 @@ export class MachineryService {
 
   // Filtros auxiliares para municipales
   findReportsByOperatorAndDate(operadorId: number, start: string, end: string) {
+    const startStr = toISODate(start);
+    const endStr   = toISODate(end);
+
     return this.reportRepo.find({
       where: {
         operador: { id: operadorId },
-        fecha: Between(new Date(start), new Date(end)),
+        fecha: Between(startStr, endStr), // strings
       },
       relations: ['operador', 'maquinaria', 'materiales'],
     });
@@ -357,11 +346,13 @@ export class MachineryService {
   findReports({ tipo, start, end }: { tipo?: string; start?: string; end?: string }) {
     const where: any = {};
     if (tipo) where.maquinaria = { tipo };
+
     if (start || end) {
-      const s = start ? new Date(start) : new Date('1970-01-01');
-      const e = end ? new Date(end) : new Date('9999-12-31');
-      where.fecha = Between(s, e);
+      const s = start ? toISODate(start) : '1970-01-01';
+      const e = end   ? toISODate(end)   : '9999-12-31';
+      where.fecha = Between(s, e); // strings
     }
+
     return this.reportRepo.find({
       where,
       relations: { operador: true, maquinaria: true, materiales: true },
@@ -370,88 +361,82 @@ export class MachineryService {
   }
 
   async restoreMunicipal(id: number) {
-  // aseguramos que existe, incluso si está borrado
-  const row = await this.reportRepo.findOne({
-    where: { id },
-    withDeleted: true,
-    relations: { operador: true, maquinaria: true, materiales: true },
-  });
-  if (!row) throw new NotFoundException('Reporte municipal no existe');
+    const row = await this.reportRepo.findOne({
+      where: { id },
+      withDeleted: true,
+      relations: { operador: true, maquinaria: true, materiales: true },
+    });
+    if (!row) throw new NotFoundException('Reporte municipal no existe');
 
-  // Capturar información antes de restaurar
-  const restoreInfo = {
-    wasDeletedAt: row.deletedAt,
-    deleteReason: row.deleteReason,
-    deletedById: row.deletedById,
-    restoredAt: new Date(),
-  };
+    const restoreInfo = {
+      wasDeletedAt: row.deletedAt,
+      deleteReason: row.deleteReason,
+      deletedById: row.deletedById,
+      restoredAt: new Date(),
+    };
 
-  // Limpiar campos de eliminación
-  await this.reportRepo.update(id, { deleteReason: null, deletedById: null });
+    await this.reportRepo.update(id, { deleteReason: null, deletedById: null });
+    await this.reportRepo.restore(id);
 
-  await this.reportRepo.restore(id); // limpia deletedAt
+    const restoredReport = await this.reportRepo.findOne({
+      where: { id },
+      relations: { operador: true, maquinaria: true, materiales: true },
+    });
 
-  // retorna la fila restaurada con relaciones e información de restauración
-  const restoredReport = await this.reportRepo.findOne({
-    where: { id },
-    relations: { operador: true, maquinaria: true, materiales: true },
-  });
-
-  return {
-    ...restoredReport,
-    restoreInfo,
-    message: `Reporte municipal ID ${id} restaurado exitosamente`,
-  };
-}
-
-  // ========== Reportes de alquiler ==========
-async createRentalReport(dto: CreateRentalReportDto) {
-  // validar operador si viene
-  if (dto.operadorId) {
-    const operator = await this.opRepo.findOne({ where: { id: Number(dto.operadorId) } });
-    if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
+    return {
+      ...restoredReport,
+      restoreInfo,
+      message: `Reporte municipal ID ${id} restaurado exitosamente`,
+    };
   }
 
-  const fuente = String(dto.fuente || '').trim();
-  const isRioOrTajo = ['ríos','rios','tajo'].includes(fuente.toLowerCase());
-  const isKylcsa = fuente.toUpperCase() === 'KYLCSA';
+  // ========== Reportes de alquiler ==========
+  async createRentalReport(dto: CreateRentalReportDto) {
+    if (dto.operadorId) {
+      const operator = await this.opRepo.findOne({ where: { id: Number(dto.operadorId) } });
+      if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
+    }
 
-  // Normaliza detalles como en municipal
-  const d = dto.detalles ?? {};
-  const detalles: Record<string, any> = {
-    ...d,
-    tipoMaterial: d.tipoMaterial ?? null,
-    cantidadMaterial: d.cantidadMaterial != null ? Number(d.cantidadMaterial) : null,
-    fuente: fuente || null, // por consistencia
-    placaCarreta: d.placaCarreta ?? null,
-    destino: d.destino ?? null,
-    tipoCarga: d.tipoCarga ?? null,
-    placaMaquinariaLlevada: d.placaMaquinariaLlevada ?? null,
-    horaInicio: d.horaInicio ?? null,
-    horaFin: d.horaFin ?? null,
-    codigoCamino: d.codigoCamino ?? null,
-    distrito: d.distrito ?? null,
-  };
+    const fuente = String(dto.fuente || '').trim();
+    const isRioOrTajo = ['ríos','rios','tajo'].includes(fuente.toLowerCase());
+    const isKylcsa = fuente.toUpperCase() === 'KYLCSA';
 
-  const entity = this.rentalRepo.create({
-    tipoMaquinaria: dto.tipoMaquinaria,
-    placa: dto.placa ?? null,
-    actividad: dto.actividad ?? null,
-    cantidad: dto.cantidad ?? null,
-    horas: dto.horas ?? null,
-    estacion: dto.estacion ?? null,
-    // reglas boleta:
-    boleta: isRioOrTajo ? null : (isKylcsa ? null : (dto.boleta ?? null)),
-    boletaKylcsa: isKylcsa ? (dto.boletaKylcsa ?? null) : null,
-    fuente: fuente || null,
-    fecha: dto.fecha ? (new Date(dto.fecha) as any) : null,
-    operadorId: dto.operadorId ?? null,
-    esAlquiler: true,
-    detalles,
-  });
+    const d = dto.detalles ?? {};
+    const detalles: Record<string, any> = {
+      ...d,
+      tipoMaterial: d.tipoMaterial ?? null,
+      cantidadMaterial: d.cantidadMaterial != null ? Number(d.cantidadMaterial) : null,
+      fuente: fuente || null,
+      placaCarreta: d.placaCarreta ?? null,
+      destino: d.destino ?? null,
+      tipoCarga: d.tipoCarga ?? null,
+      placaMaquinariaLlevada: d.placaMaquinariaLlevada ?? null,
+      horaInicio: d.horaInicio ?? null,
+      horaFin: d.horaFin ?? null,
+      codigoCamino: d.codigoCamino ?? null,
+      distrito: d.distrito ?? null,
+    };
 
-  return this.rentalRepo.save(entity);
-}
+    const entity = this.rentalRepo.create({
+      tipoMaquinaria: dto.tipoMaquinaria,
+      placa: dto.placa ?? null,
+      actividad: dto.actividad ?? null,
+      cantidad: dto.cantidad ?? null,
+      horas: dto.horas ?? null,
+      estacion: dto.estacion ?? null,
+      boleta: isRioOrTajo ? null : (isKylcsa ? null : (dto.boleta ?? null)),
+      boletaKylcsa: isKylcsa ? (dto.boletaKylcsa ?? null) : null,
+      fuente: fuente || null,
+      // ⬇️ si en RentalReport.fecha también es 'date', conviene usar toISODate:
+       fecha: dto.fecha ? toISODate(dto.fecha) : null,
+      //fecha: dto.fecha ? (new Date(dto.fecha) as any) : null,
+      operadorId: dto.operadorId ?? null,
+      esAlquiler: true,
+      detalles,
+    });
+
+    return this.rentalRepo.save(entity);
+  }
 
   findAllRentalReports() {
     return this.rentalRepo.find({ relations: ['operador'] });
@@ -478,6 +463,8 @@ async createRentalReport(dto: CreateRentalReportDto) {
     if (dto.fuente !== undefined)   r.fuente   = dto.fuente ?? null;
     if (dto.tipoMaquinaria !== undefined) r.tipoMaquinaria = dto.tipoMaquinaria ?? r.tipoMaquinaria;
     if (dto.placa !== undefined)    r.placa    = dto.placa ?? r.placa;
+    // ⬇️ igual que arriba: si es 'date' string, usa toISODate
+    // if (dto.fecha !== undefined) r.fecha = dto.fecha ? toISODate(dto.fecha) : r.fecha;
     if (dto.fecha !== undefined)    r.fecha    = dto.fecha ? new Date(dto.fecha) as any : r.fecha;
     if (dto.operadorId !== undefined) r.operadorId = dto.operadorId ?? r.operadorId;
 
@@ -489,7 +476,7 @@ async createRentalReport(dto: CreateRentalReportDto) {
     if (!row) throw new NotFoundException('Reporte de alquiler no existe');
 
     row.deleteReason = reason ?? null;
-    row.deletedById  = userId ?? null; 
+    row.deletedById  = userId ?? null;
     await this.rentalRepo.save(row);
     await this.rentalRepo.softDelete(id);
 
@@ -504,47 +491,43 @@ async createRentalReport(dto: CreateRentalReportDto) {
   }
 
   getDeletedRental() {
-  return this.rentalRepo.find({
-    withDeleted: true,                       // incluye soft-deleted
-    where: { deletedAt: Not(IsNull()) },     // solo los eliminados
-    order: { deletedAt: 'DESC', id: 'DESC' },
-    relations: { operador: true, deletedBy: true }, // <- aquí
-  });
-}
+    return this.rentalRepo.find({
+      withDeleted: true,
+      where: { deletedAt: Not(IsNull()) },
+      order: { deletedAt: 'DESC', id: 'DESC' },
+      relations: { operador: true, deletedBy: true },
+    });
+  }
 
-async restoreRental(id: number) {
-  const row = await this.rentalRepo.findOne({
-    where: { id },
-    withDeleted: true,
-    relations: ['operador'],
-  });
-  if (!row) throw new NotFoundException('Reporte de alquiler no existe');
+  async restoreRental(id: number) {
+    const row = await this.rentalRepo.findOne({
+      where: { id },
+      withDeleted: true,
+      relations: ['operador'],
+    });
+    if (!row) throw new NotFoundException('Reporte de alquiler no existe');
 
-  // Capturar información antes de restaurar
-  const restoreInfo = {
-    wasDeletedAt: row.deletedAt,
-    deleteReason: row.deleteReason,
-    deletedById: row.deletedById,
-    restoredAt: new Date(),
-  };
+    const restoreInfo = {
+      wasDeletedAt: row.deletedAt,
+      deleteReason: row.deleteReason,
+      deletedById: row.deletedById,
+      restoredAt: new Date(),
+    };
 
-  // Limpiar campos de eliminación
-  await this.rentalRepo.update(id, { deleteReason: null, deletedById: null });
-  
-  await this.rentalRepo.restore(id);
+    await this.rentalRepo.update(id, { deleteReason: null, deletedById: null });
+    await this.rentalRepo.restore(id);
 
-  // Retornar reporte restaurado con información completa
-  const restoredReport = await this.rentalRepo.findOne({
-    where: { id },
-    relations: ['operador'],
-  });
+    const restoredReport = await this.rentalRepo.findOne({
+      where: { id },
+      relations: ['operador'],
+    });
 
-  return {
-    ...restoredReport,
-    restoreInfo,
-    message: `Reporte de alquiler ID ${id} restaurado exitosamente`,
-  };
-}
+    return {
+      ...restoredReport,
+      restoreInfo,
+      message: `Reporte de alquiler ID ${id} restaurado exitosamente`,
+    };
+  }
 
   // ========== Reportes de materiales ==========
   createMaterialReport(dto: CreateMaterialReportDto) {
