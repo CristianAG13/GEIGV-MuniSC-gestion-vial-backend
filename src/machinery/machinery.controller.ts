@@ -36,7 +36,7 @@ export class MachineryController {
  // ---------- MAQUINARIAS ----------
   @Post()
   @Roles('admin')
-  @Audit(AuditEntity.TRANSPORTE, AuditAction.CREATE, 'Maquinaria creada')
+  @Audit(AuditEntity.TRANSPORTE, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   createMachinery(@Body() dto: CreateMachineryDto) {
     return this.service.createMachinery(dto);
   }
@@ -53,7 +53,7 @@ export class MachineryController {
 
   @Patch(':id(\\d+)')
   @Roles('admin')
-  @Audit(AuditEntity.TRANSPORTE, AuditAction.UPDATE, 'Maquinaria actualizada')
+  @Audit(AuditEntity.TRANSPORTE, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMachineryDto,
@@ -63,7 +63,7 @@ export class MachineryController {
 
   @Delete(':id(\\d+)')
   @Roles('admin')
-  @Audit(AuditEntity.TRANSPORTE, AuditAction.DELETE, 'Maquinaria eliminada')
+  @Audit(AuditEntity.TRANSPORTE, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
   }
@@ -98,7 +98,7 @@ export class MachineryController {
 
   // CRUD base
   @Post('report')
-  @Audit(AuditEntity.REPORTES, AuditAction.CREATE, 'Reporte municipal creado')
+  @Audit(AuditEntity.REPORTES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   createReport(@Body() dto: CreateReportDto) {
     return this.service.createReport(dto);
   }
@@ -115,7 +115,7 @@ export class MachineryController {
   }
 
   @Patch('report/:id(\\d+)')
-  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE, 'Reporte municipal actualizado')
+  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   updateReport(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: any,
@@ -124,7 +124,7 @@ export class MachineryController {
   }
 
   @Delete('report/:id(\\d+)')
-  @Audit(AuditEntity.REPORTES, AuditAction.DELETE, 'Reporte municipal eliminado')
+  @Audit(AuditEntity.REPORTES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   removeMunicipal(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { reason?: string } = {},
@@ -136,7 +136,7 @@ export class MachineryController {
 
   @Patch('report/:id(\\d+)/restore')
   @Roles('admin','superadmin')
-  @Audit(AuditEntity.REPORTES, AuditAction.RESTORE, 'Reporte municipal restaurado')
+  @Audit(AuditEntity.REPORTES, AuditAction.RESTORE) // Sin descripción estática para usar la generada automáticamente
   restoreMunicipal(@Param('id', ParseIntPipe) id: number) {
   return this.service.restoreMunicipal(id);
   }
@@ -188,7 +188,7 @@ export class MachineryController {
 
   @Patch('rental-report/:id(\\d+)/restore')
   @Roles('admin','superadmin')
-  @Audit(AuditEntity.REPORTES, AuditAction.RESTORE, 'Reporte de alquiler restaurado')
+  @Audit(AuditEntity.REPORTES, AuditAction.RESTORE) // Sin descripción estática para usar la generada automáticamente
   restoreRental(@Param('id', ParseIntPipe) id: number) {
   return this.service.restoreRental(id);
 }

@@ -58,8 +58,4 @@ export class CreateAuditLogDto {
   @IsOptional()
   @IsString()
   url?: string;
-
-  @IsOptional()
-  @IsObject()
-  metadata?: any;
 }

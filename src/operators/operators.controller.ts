@@ -31,7 +31,7 @@ export class OperatorsController {
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.CREATED)
-  @Audit(AuditEntity.OPERADORES, AuditAction.CREATE, 'Operador creado')
+  @Audit(AuditEntity.OPERADORES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   create(@Body() createOperatorDto: CreateOperatorDto) {
     return this.operatorsService.create(createOperatorDto);
   }
@@ -67,7 +67,7 @@ export class OperatorsController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
-  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE, 'Operador actualizado')
+  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOperatorDto: UpdateOperatorDto,
@@ -79,7 +79,7 @@ export class OperatorsController {
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Audit(AuditEntity.OPERADORES, AuditAction.DELETE, 'Operador eliminado')
+  @Audit(AuditEntity.OPERADORES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.remove(id);
   }
@@ -87,7 +87,7 @@ export class OperatorsController {
   @Patch(':id/associate-user/:userId')
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
-  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE, 'Operador asociado con usuario')
+  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   associateWithUser(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -98,7 +98,7 @@ export class OperatorsController {
   @Patch(':id/remove-user-association')
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')
-  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE, 'Asociación de usuario removida del operador')
+  @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   removeUserAssociation(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.removeUserAssociation(id);
   }

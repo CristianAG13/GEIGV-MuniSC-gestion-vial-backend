@@ -57,30 +57,23 @@ export class AuditInterceptor implements NestInterceptor {
             userName: user?.name,
             userLastname: user?.lastname,
             userRoles: user?.roles?.map((role: any) => role.name),
-            description: description || this.generateDescription(action, entity, result),
+            description: description || this.generateDescription(action, entity, result, request),
             userAgent,
             ip,
             url,
-            metadata: {
-              method,
-              timestamp: new Date().toISOString(),
-            },
           };
 
           // Agregar datos específicos según la acción
           switch (action) {
             case AuditAction.CREATE:
               auditData['entityId'] = result?.id || result?.data?.id;
-              // Para CREATE, capturar tanto el request body como la respuesta
               auditData['changesAfter'] = this.sanitizeData(result?.data || result);
-              auditData['requestData'] = this.sanitizeData(request.body);
               break;
 
             case AuditAction.UPDATE:
               auditData['entityId'] = request.params?.id || result?.id;
               auditData['changesBefore'] = this.sanitizeData(request.body?.currentData);
               auditData['changesAfter'] = this.sanitizeData(result?.data || result);
-              auditData['requestData'] = this.sanitizeData(request.body);
               break;
 
             case AuditAction.DELETE:
@@ -92,13 +85,11 @@ export class AuditInterceptor implements NestInterceptor {
               auditData['entityId'] = request.params?.id;
               auditData['changesBefore'] = this.sanitizeData(request.body?.currentRoles);
               auditData['changesAfter'] = this.sanitizeData(result?.roles || result?.data?.roles);
-              auditData['requestData'] = this.sanitizeData(request.body);
               break;
 
             case AuditAction.RESTORE:
               auditData['entityId'] = request.params?.id;
               auditData['changesAfter'] = this.sanitizeData(result?.data || result);
-              auditData['metadata']['restoredFrom'] = 'soft_delete';
               break;
           }
 
@@ -112,10 +103,163 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
-  private generateDescription(action: AuditAction, entity: AuditEntity, result: any): string {
+  private generateDescription(action: AuditAction, entity: AuditEntity, result: any, request?: any): string {
     const entityName = entity.charAt(0).toUpperCase() + entity.slice(1);
     const entityId = result?.id || result?.data?.id || 'desconocido';
+    
+    // Para usuarios, incluir email en la descripción si está disponible
+    if (entity === AuditEntity.USUARIOS) {
+      const email = result?.email || result?.data?.email;
+      
+      switch (action) {
+        case AuditAction.CREATE:
+          return email ? `Se creó usuario: ${email} (ID: ${entityId})` : `Se creó usuario con ID ${entityId}`;
+        case AuditAction.UPDATE:
+          return email ? `Se actualizó usuario: ${email} (ID: ${entityId})` : `Se actualizó usuario con ID ${entityId}`;
+        case AuditAction.DELETE:
+          return email ? `Se eliminó usuario: ${email} (ID: ${entityId})` : `Se eliminó usuario con ID ${entityId}`;
+        case AuditAction.ROLE_CHANGE:
+          return email ? `Se modificaron roles del usuario: ${email} (ID: ${entityId})` : `Se modificaron roles del usuario con ID ${entityId}`;
+        case AuditAction.RESTORE:
+          return email ? `Se restauró usuario: ${email} (ID: ${entityId})` : `Se restauró usuario con ID ${entityId}`;
+        default:
+          return email ? `Operación ${action} en usuario: ${email}` : `Operación ${action} en usuario con ID ${entityId}`;
+      }
+    }
 
+    // Para operadores, incluir nombre e identificación en la descripción si está disponible
+    if (entity === AuditEntity.OPERADORES) {
+      const name = result?.name || result?.data?.name;
+      const lastName = result?.last || result?.data?.last;
+      const identification = result?.identification || result?.data?.identification;
+      const fullName = name && lastName ? `${name} ${lastName}` : name || lastName;
+      const operatorInfo = fullName && identification ? `${fullName} (CC: ${identification})` : 
+                          fullName ? fullName : 
+                          identification ? `CC: ${identification}` : null;
+      
+      // Detectar operaciones específicas basadas en la URL
+      const url = request?.url || '';
+      const isAssociateUser = url.includes('/associate-user/');
+      const isRemoveAssociation = url.includes('/remove-user-association');
+      
+      switch (action) {
+        case AuditAction.CREATE:
+          return operatorInfo ? `Se creó operador: ${operatorInfo} (ID: ${entityId})` : `Se creó operador con ID ${entityId}`;
+        case AuditAction.UPDATE:
+          if (isAssociateUser) {
+            return operatorInfo ? `Se asoció usuario con operador: ${operatorInfo} (ID: ${entityId})` : `Se asoció usuario con operador ID ${entityId}`;
+          } else if (isRemoveAssociation) {
+            return operatorInfo ? `Se removió asociación de usuario del operador: ${operatorInfo} (ID: ${entityId})` : `Se removió asociación de usuario del operador ID ${entityId}`;
+          }
+          return operatorInfo ? `Se actualizó operador: ${operatorInfo} (ID: ${entityId})` : `Se actualizó operador con ID ${entityId}`;
+        case AuditAction.DELETE:
+          return operatorInfo ? `Se eliminó operador: ${operatorInfo} (ID: ${entityId})` : `Se eliminó operador con ID ${entityId}`;
+        case AuditAction.RESTORE:
+          return operatorInfo ? `Se restauró operador: ${operatorInfo} (ID: ${entityId})` : `Se restauró operador con ID ${entityId}`;
+        default:
+          return operatorInfo ? `Operación ${action} en operador: ${operatorInfo}` : `Operación ${action} en operador con ID ${entityId}`;
+      }
+    }
+
+    // Para maquinaria (transporte), incluir tipo y placa en la descripción si está disponible
+    if (entity === AuditEntity.TRANSPORTE) {
+      const tipo = result?.tipo || result?.data?.tipo;
+      const placa = result?.placa || result?.data?.placa;
+      const machineryInfo = tipo && placa ? `${tipo} (Placa: ${placa})` : 
+                           tipo ? tipo : 
+                           placa ? `Placa: ${placa}` : null;
+      
+      switch (action) {
+        case AuditAction.CREATE:
+          return machineryInfo ? `Se creó maquinaria: ${machineryInfo} (ID: ${entityId})` : `Se creó maquinaria con ID ${entityId}`;
+        case AuditAction.UPDATE:
+          return machineryInfo ? `Se actualizó maquinaria: ${machineryInfo} (ID: ${entityId})` : `Se actualizó maquinaria con ID ${entityId}`;
+        case AuditAction.DELETE:
+          return machineryInfo ? `Se eliminó maquinaria: ${machineryInfo} (ID: ${entityId})` : `Se eliminó maquinaria con ID ${entityId}`;
+        case AuditAction.RESTORE:
+          return machineryInfo ? `Se restauró maquinaria: ${machineryInfo} (ID: ${entityId})` : `Se restauró maquinaria con ID ${entityId}`;
+        default:
+          return machineryInfo ? `Operación ${action} en maquinaria: ${machineryInfo}` : `Operación ${action} en maquinaria con ID ${entityId}`;
+      }
+    }
+
+    // Para reportes, incluir fecha y tipo de reporte en la descripción si está disponible
+    if (entity === AuditEntity.REPORTES) {
+      const fecha = result?.fecha || result?.data?.fecha;
+      const tipoActividad = result?.tipoActividad || result?.data?.tipoActividad;
+      const url = request?.url || '';
+      const isRentalReport = url.includes('rental-report');
+      const isMaterialReport = url.includes('material-report');
+      const reportType = isRentalReport ? 'Alquiler' : isMaterialReport ? 'Material' : 'Municipal';
+      
+      let reportInfo = `Reporte ${reportType}`;
+      if (fecha) reportInfo += ` (${fecha})`;
+      if (tipoActividad) reportInfo += ` - ${tipoActividad}`;
+      
+      switch (action) {
+        case AuditAction.CREATE:
+          return `Se creó ${reportInfo} (ID: ${entityId})`;
+        case AuditAction.UPDATE:
+          return `Se actualizó ${reportInfo} (ID: ${entityId})`;
+        case AuditAction.DELETE:
+          return `Se eliminó ${reportInfo} (ID: ${entityId})`;
+        case AuditAction.RESTORE:
+          return `Se restauró ${reportInfo} (ID: ${entityId})`;
+        default:
+          return `Operación ${action} en ${reportInfo}`;
+      }
+    }
+
+    // Para roles, incluir nombre del rol en la descripción si está disponible
+    if (entity === AuditEntity.ROLES) {
+      const name = result?.name || result?.data?.name;
+      const roleInfo = name ? `rol ${name}` : 'rol';
+      
+      switch (action) {
+        case AuditAction.CREATE:
+          return name ? `Se creó ${roleInfo} (ID: ${entityId})` : `Se creó rol con ID ${entityId}`;
+        case AuditAction.UPDATE:
+          const url = request?.url || '';
+          if (url.includes('/activate/')) {
+            return name ? `Se activó ${roleInfo} (ID: ${entityId})` : `Se activó rol con ID ${entityId}`;
+          } else if (url.includes('/deactivate/')) {
+            return name ? `Se desactivó ${roleInfo} (ID: ${entityId})` : `Se desactivó rol con ID ${entityId}`;
+          }
+          return name ? `Se actualizó ${roleInfo} (ID: ${entityId})` : `Se actualizó rol con ID ${entityId}`;
+        case AuditAction.DELETE:
+          return name ? `Se eliminó ${roleInfo} (ID: ${entityId})` : `Se eliminó rol con ID ${entityId}`;
+        default:
+          return name ? `Operación ${action} en ${roleInfo}` : `Operación ${action} en rol con ID ${entityId}`;
+      }
+    }
+
+    // Para solicitudes de rol, incluir detalles de la solicitud si están disponibles
+    if (entity === AuditEntity.SOLICITUDES) {
+      const requestedRole = result?.requestedRole || result?.data?.requestedRole;
+      const userName = result?.user?.email || result?.data?.user?.email;
+      const requestInfo = requestedRole && userName ? `solicitud de rol ${requestedRole} para ${userName}` : 
+                         requestedRole ? `solicitud de rol ${requestedRole}` : 
+                         userName ? `solicitud de rol para ${userName}` : 'solicitud de rol';
+      
+      switch (action) {
+        case AuditAction.CREATE:
+          return `Se creó ${requestInfo} (ID: ${entityId})`;
+        case AuditAction.UPDATE:
+          const url = request?.url || '';
+          if (url.includes('/approve/')) {
+            return `Se aprobó ${requestInfo} (ID: ${entityId})`;
+          } else if (url.includes('/reject/')) {
+            return `Se rechazó ${requestInfo} (ID: ${entityId})`;
+          }
+          return `Se actualizó ${requestInfo} (ID: ${entityId})`;
+        case AuditAction.DELETE:
+          return `Se canceló ${requestInfo} (ID: ${entityId})`;
+        default:
+          return `Operación ${action} en ${requestInfo}`;
+      }
+    }
+
+    // Para otras entidades, usar formato genérico
     switch (action) {
       case AuditAction.CREATE:
         return `Se creó ${entityName} con ID ${entityId}`;

@@ -80,7 +80,7 @@ async createDefaultRolesPublic() {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
-  @Audit(AuditEntity.ROLES, AuditAction.CREATE, 'Rol creado')
+  @Audit(AuditEntity.ROLES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
@@ -119,7 +119,7 @@ async createDefaultRolesPublic() {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
-  @Audit(AuditEntity.ROLES, AuditAction.UPDATE, 'Rol actualizado')
+  @Audit(AuditEntity.ROLES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -130,7 +130,7 @@ async createDefaultRolesPublic() {
   @Patch(':id/activate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
-  @Audit(AuditEntity.ROLES, AuditAction.UPDATE, 'Rol activado')
+  @Audit(AuditEntity.ROLES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.activate(id);
   }
@@ -138,7 +138,7 @@ async createDefaultRolesPublic() {
   @Patch(':id/deactivate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
-  @Audit(AuditEntity.ROLES, AuditAction.UPDATE, 'Rol desactivado')
+  @Audit(AuditEntity.ROLES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   deactivate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.deactivate(id);
   }
@@ -146,7 +146,7 @@ async createDefaultRolesPublic() {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ingeniero')
-  @Audit(AuditEntity.ROLES, AuditAction.DELETE, 'Rol eliminado')
+  @Audit(AuditEntity.ROLES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.remove(id);
   }

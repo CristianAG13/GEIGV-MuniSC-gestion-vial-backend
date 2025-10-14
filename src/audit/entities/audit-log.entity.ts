@@ -80,9 +80,6 @@ export class AuditLog {
   @Column({ nullable: true })
   url: string;
 
-  @Column({ type: 'json', nullable: true })
-  metadata: any;
-
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'userId' })
   user: User;

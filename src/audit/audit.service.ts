@@ -230,7 +230,7 @@ export class AuditService {
 
   // Métodos de conveniencia para logging automático
 
-  async logCreate(entity: AuditEntity, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[], metadata?: any) {
+  async logCreate(entity: AuditEntity, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.CREATE,
       entity,
@@ -242,11 +242,10 @@ export class AuditService {
       userRoles,
       description: description || `Se creó ${entity} con ID ${entityData?.id}`,
       changesAfter: entityData,
-      metadata,
     });
   }
 
-  async logUpdate(entity: AuditEntity, entityId: string, beforeData: any, afterData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[], metadata?: any) {
+  async logUpdate(entity: AuditEntity, entityId: string, beforeData: any, afterData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.UPDATE,
       entity,
@@ -259,11 +258,10 @@ export class AuditService {
       description: description || `Se actualizó ${entity} con ID ${entityId}`,
       changesBefore: beforeData,
       changesAfter: afterData,
-      metadata,
     });
   }
 
-  async logDelete(entity: AuditEntity, entityId: string, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[], metadata?: any) {
+  async logDelete(entity: AuditEntity, entityId: string, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.DELETE,
       entity,
@@ -275,11 +273,10 @@ export class AuditService {
       userRoles,
       description: description || `Se eliminó ${entity} con ID ${entityId}`,
       changesBefore: entityData,
-      metadata,
     });
   }
 
-  async logAuth(description: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, metadata?: any) {
+  async logAuth(description: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string) {
     return this.createLog({
       action: AuditAction.AUTH,
       entity: AuditEntity.AUTHENTICATION,
@@ -288,20 +285,18 @@ export class AuditService {
       userName,
       userLastname,
       description,
-      metadata,
     });
   }
 
-  async logSystem(description: string, metadata?: any) {
+  async logSystem(description: string) {
     return this.createLog({
       action: AuditAction.SYSTEM,
       entity: AuditEntity.SYSTEM,
       description,
-      metadata,
     });
   }
 
-  async logRoleChange(userId: string, userEmail: string, userName: string, userLastname: string, oldRoles: string[], newRoles: string[], description?: string, metadata?: any) {
+  async logRoleChange(userId: string, userEmail: string, userName: string, userLastname: string, oldRoles: string[], newRoles: string[], description?: string) {
     return this.createLog({
       action: AuditAction.ROLE_CHANGE,
       entity: AuditEntity.ROLES,
@@ -314,11 +309,10 @@ export class AuditService {
       description: description || `Se cambiaron los roles del usuario ${userEmail} (${userName} ${userLastname})`,
       changesBefore: { roles: oldRoles },
       changesAfter: { roles: newRoles },
-      metadata,
     });
   }
 
-  async logRestore(entity: AuditEntity, entityId: string, restoredData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[], metadata?: any) {
+  async logRestore(entity: AuditEntity, entityId: string, restoredData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.RESTORE,
       entity,
@@ -330,11 +324,6 @@ export class AuditService {
       userRoles,
       description: description || `Se restauró ${entity} con ID ${entityId}`,
       changesAfter: restoredData,
-      metadata: {
-        ...metadata,
-        restoredFrom: 'soft_delete',
-        restoredAt: new Date().toISOString(),
-      },
     });
   }
 

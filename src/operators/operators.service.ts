@@ -46,7 +46,12 @@ export class OperatorsService {
     }
 
     const operator = this.operatorsRepository.create(createOperatorDto);
-    return this.operatorsRepository.save(operator);
+    const savedOperator = await this.operatorsRepository.save(operator);
+    
+    // Mostrar información de operador creado
+    console.log(`✅ Operador creado: ${savedOperator.name} ${savedOperator.last} (CC: ${savedOperator.identification}) | ID: ${savedOperator.id}`);
+    
+    return savedOperator;
   }
 
   async findAll(): Promise<Operator[]> {
@@ -109,7 +114,12 @@ export class OperatorsService {
     }
 
     await this.operatorsRepository.update(id, updateOperatorDto);
-    return this.findOne(id);
+    const updatedOperator = await this.findOne(id);
+    
+    // Mostrar información de operador actualizado
+    console.log(`🔄 Operador actualizado: ${updatedOperator.name} ${updatedOperator.last} (CC: ${updatedOperator.identification}) | ID: ${updatedOperator.id}`);
+    
+    return updatedOperator;
   }
 
   async remove(id: number): Promise<void> {
@@ -120,6 +130,9 @@ export class OperatorsService {
     if (!operator) {
       throw new NotFoundException(`No se encontró un operador con el ID ${id}`);
     }
+
+    // Mostrar información de operador eliminado
+    console.log(`🗑️ Operador eliminado: ${operator.name} ${operator.last} (CC: ${operator.identification}) | ID: ${operator.id}`);
 
     await this.operatorsRepository.delete(id);
   }
@@ -185,7 +198,12 @@ export class OperatorsService {
     operator.userId = userId;
     await this.operatorsRepository.save(operator);
 
-    return this.findOne(id);
+    const updatedOperator = await this.findOne(id);
+    
+    // Mostrar información de asociación
+    console.log(`🔗 Usuario asociado: ${user.email} con operador ${operator.name} ${operator.last} (CC: ${operator.identification}) | ID: ${operator.id}`);
+
+    return updatedOperator;
   }
 
   async removeUserAssociation(id: number): Promise<Operator> {
@@ -200,7 +218,12 @@ export class OperatorsService {
     operator.userId = null;
     await this.operatorsRepository.save(operator);
 
-    return this.findOne(id);
+    const updatedOperator = await this.findOne(id);
+    
+    // Mostrar información de remoción de asociación
+    console.log(`🔗❌ Asociación de usuario removida del operador: ${operator.name} ${operator.last} (CC: ${operator.identification}) | ID: ${operator.id}`);
+
+    return updatedOperator;
   }
 
   async getReportsByOperator(id: number) {
