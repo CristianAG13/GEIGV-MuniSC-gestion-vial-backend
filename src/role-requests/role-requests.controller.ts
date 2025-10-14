@@ -30,7 +30,7 @@ export class RoleRequestsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Audit(AuditEntity.SOLICITUDES, AuditAction.CREATE, 'Solicitud de rol creada')
+  @Audit(AuditEntity.SOLICITUDES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   async createRequest(@Request() req, @Body() createRoleRequestDto: CreateRoleRequestDto) {
     const userId = req.user.id;
     const request = await this.roleRequestsService.create(userId, createRoleRequestDto);
@@ -66,7 +66,7 @@ export class RoleRequestsController {
   @UseGuards(RolesGuard)
   @Roles('ingeniero', 'superadmin')
   @HttpCode(HttpStatus.OK)
-  @Audit(AuditEntity.SOLICITUDES, AuditAction.UPDATE, 'Solicitud de rol aprobada')
+  @Audit(AuditEntity.SOLICITUDES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   async approveRequest(@Param('requestId', ParseIntPipe) requestId: number, @Request() req) {
     const adminId = req.user.id;
     const result = await this.roleRequestsService.approve(requestId, adminId);
@@ -81,7 +81,7 @@ export class RoleRequestsController {
   @UseGuards(RolesGuard)
   @Roles('ingeniero', 'superadmin')
   @HttpCode(HttpStatus.OK)
-  @Audit(AuditEntity.SOLICITUDES, AuditAction.UPDATE, 'Solicitud de rol rechazada')
+  @Audit(AuditEntity.SOLICITUDES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   async rejectRequest(
     @Param('requestId', ParseIntPipe) requestId: number,
     @Request() req,
@@ -100,7 +100,7 @@ export class RoleRequestsController {
 
   @Delete(':requestId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Audit(AuditEntity.SOLICITUDES, AuditAction.DELETE, 'Solicitud de rol cancelada')
+  @Audit(AuditEntity.SOLICITUDES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   async cancelRequest(@Param('requestId', ParseIntPipe) requestId: number, @Request() req) {
     const userId = req.user.id;
     await this.roleRequestsService.cancelRequest(requestId, userId);

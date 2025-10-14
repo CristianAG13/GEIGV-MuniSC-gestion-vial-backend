@@ -33,8 +33,7 @@ CREATE TABLE audit_logs (
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   userAgent VARCHAR(1000),
   ip VARCHAR(45),
-  url VARCHAR(500),
-  metadata JSONB
+  url VARCHAR(500)
 );
 ```
 
@@ -64,19 +63,19 @@ import { AuditEntity, AuditAction } from '../audit/entities/audit-log.entity';
 export class UsersController {
   
   @Post()
-  @Audit(AuditEntity.USUARIOS, AuditAction.CREATE, 'Se creó un nuevo usuario')
+  @Audit(AuditEntity.USUARIOS, AuditAction.CREATE) // Descripción generada automáticamente
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Patch(':id')
-  @Audit(AuditEntity.USUARIOS, AuditAction.UPDATE)
+  @Audit(AuditEntity.USUARIOS, AuditAction.UPDATE) // Descripción generada automáticamente
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
-  @Audit(AuditEntity.USUARIOS, AuditAction.DELETE)
+  @Audit(AuditEntity.USUARIOS, AuditAction.DELETE) // Descripción generada automáticamente
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
@@ -261,6 +260,58 @@ export class AuthService {
 }
 ```
 
+## Descripciones Automáticas Específicas
+
+El sistema de auditoría genera automáticamente descripciones específicas para diferentes entidades cuando no se proporciona una descripción estática en el decorador `@Audit`.
+
+### Para Usuarios (AuditEntity.USUARIOS)
+
+**Ejemplos de descripciones generadas automáticamente:**
+
+- **CREATE**: `Se creó usuario: martin@ejemplo.com (ID: 123)`
+- **UPDATE**: `Se actualizó usuario: martin@ejemplo.com (ID: 123)`
+- **DELETE**: `Se eliminó usuario: martin@ejemplo.com (ID: 123)`
+- **ROLE_CHANGE**: `Se modificaron roles del usuario: martin@ejemplo.com (ID: 123)`
+
+### Para Operadores (AuditEntity.OPERADORES)
+
+**Ejemplos de descripciones generadas automáticamente:**
+
+- **CREATE**: `Se creó operador: Juan Pérez (CC: 12345678) (ID: 456)`
+- **UPDATE**: `Se actualizó operador: Juan Pérez (CC: 12345678) (ID: 456)`
+- **DELETE**: `Se eliminó operador: Juan Pérez (CC: 12345678) (ID: 456)`
+- **UPDATE (Asociar Usuario)**: `Se asoció usuario con operador: Juan Pérez (CC: 12345678) (ID: 456)`
+- **UPDATE (Remover Asociación)**: `Se removió asociación de usuario del operador: Juan Pérez (CC: 12345678) (ID: 456)`
+
+### Uso Recomendado
+
+```typescript
+@Controller('users')
+@UseInterceptors(AuditInterceptor)
+export class UsersController {
+  
+  // ✅ Sin descripción estática - usa descripción automática específica
+  @Post()
+  @Audit(AuditEntity.USUARIOS, AuditAction.CREATE)
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  // ❌ Con descripción estática - menos específica
+  @Post()
+  @Audit(AuditEntity.USUARIOS, AuditAction.CREATE, 'Usuario creado')
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+}
+```
+
+**Ventajas de las descripciones automáticas:**
+- Incluyen el email del usuario específico
+- Son consistentes en todo el sistema
+- Se adaptan automáticamente a los datos de la entidad
+- Reducen código duplicado
+
 ## Consulta de Logs desde el Frontend
 
 ### Obtener Logs con Filtros
@@ -372,9 +423,6 @@ if (canAccessAudit) {
       "userAgent": "Mozilla/5.0...",
       "ip": "192.168.1.100",
       "url": "/api/users",
-      "metadata": {
-        "method": "POST"
-      },
       "user": {
         "id": 456,
         "email": "admin@example.com",
@@ -406,24 +454,7 @@ await this.auditService.logUpdate(
 );
 ```
 
-### 3. Incluir Contexto en Metadata
-```typescript
-await this.auditService.logCreate(
-  AuditEntity.REPORTES,
-  report,
-  `Se generó reporte de maquinaria`,
-  currentUser.id,
-  currentUser.email,
-  currentUser.roles,
-  {
-    reportType: 'maquinaria',
-    dateRange: { start: startDate, end: endDate },
-    filters: appliedFilters,
-  }
-);
-```
-
-### 4. Gestión de Errores
+### 3. Gestión de Errores
 El sistema de auditoría no debe fallar las operaciones principales:
 
 ```typescript

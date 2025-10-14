@@ -12,8 +12,6 @@ import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AssignRolesDto } from './dto/assign-roles.dto';
-import { AuditService } from '../audit/audit.service';
-import { AuditEntity } from '../audit/entities/audit-log.entity';
 
 @Injectable()
 export class UsersService {
@@ -22,7 +20,6 @@ export class UsersService {
     private userRepository: Repository<User>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-    private auditService: AuditService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -63,7 +60,6 @@ export class UsersService {
       }
 
       user.roles = [superadminRole];
-      console.log('Primer usuario creado. Se ha asignado el rol de superadmin');
     } else {
       // Para los demás usuarios, asignar roles si se proporcionaron
       if (roleIds && roleIds.length > 0) {
@@ -84,14 +80,15 @@ export class UsersService {
 
         if (invitadoRole) {
           user.roles = [invitadoRole];
-          console.log(`Usuario ${email} creado. Se ha asignado el rol de invitado por defecto`);
-        } else {
-          console.warn('No se encontró el rol "invitado" para asignar por defecto');
         }
       }
     }
 
     const savedUser = await this.userRepository.save(user);
+
+    // Mostrar información de usuario creado
+    const roleNames = savedUser.roles?.map(r => r.name).join(', ') || 'sin roles';
+    console.log(`✅ Usuario creado: ${savedUser.email} | Roles: ${roleNames}`);
 
     // Retornar el usuario con roles
     return this.findOne(savedUser.id);
@@ -165,7 +162,12 @@ export class UsersService {
     // Aplicar otras actualizaciones
     Object.assign(user, otherUpdates);
 
-    await this.userRepository.save(user);
+    const updatedUser = await this.userRepository.save(user);
+    
+    // Mostrar información de usuario actualizado
+    const roleNames = updatedUser.roles?.map(r => r.name).join(', ') || 'sin roles';
+    console.log(`🔄 Usuario actualizado: ${updatedUser.email} | Roles: ${roleNames}`);
+    
     return this.findOne(id);
   }
 
@@ -196,6 +198,10 @@ export class UsersService {
     user.roles = [];
     user.isActive = false; // Agregar esta línea
     await this.userRepository.save(user);
+    
+    // Mostrar información de roles removidos
+    console.log(`🚫 Todos los roles removidos de: ${user.email} | Usuario desactivado`);
+    
     return this.findOne(id);
   }
 
@@ -211,19 +217,30 @@ export class UsersService {
   user.roles = roles;
   user.isActive = true; // Activar cuando se asignan roles
   await this.userRepository.save(user);
+  
+  // Mostrar información de roles asignados
+  const roleNames = roles.map(r => r.name).join(', ');
+  console.log(`👤 Roles asignados a: ${user.email} | Nuevos roles: ${roleNames}`);
+  
   return this.findOne(id);
 }
 
   async removeRole(userId: number, roleId: number): Promise<User> {
     const user = await this.findOne(userId);
     
+    const roleToRemove = user.roles.find(role => role.id === roleId);
     user.roles = user.roles.filter(role => role.id !== roleId);
     await this.userRepository.save(user);
+
+    // Mostrar información de rol removido
+    if (roleToRemove) {
+      console.log(`➖ Rol removido de: ${user.email} | Rol eliminado: ${roleToRemove.name}`);
+    }
 
     return this.findOne(userId);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number): Promise<{ id: number; email: string; deletedData: any }> {
     const user = await this.findOne(id);
     
     // Capturar datos para auditoría antes de eliminar
@@ -243,17 +260,16 @@ export class UsersService {
       // Intentar eliminar directamente (debería funcionar con las configuraciones onDelete)
       await this.userRepository.remove(user);
       
-      // Registrar en auditoría si la eliminación fue exitosa
-      try {
-        await this.auditService.logDelete(
-          AuditEntity.USUARIOS,
-          id.toString(),
-          userDataForAudit,
-          `Usuario ${user.email} eliminado`,
-        );
-      } catch (auditError) {
-        console.error('Error registrando auditoría de eliminación:', auditError);
-      }
+      // Mostrar información de usuario eliminado
+      console.log(`🗑️ Usuario eliminado: ${user.email} | ID: ${user.id}`);
+      
+      // ✅ Backend registra automáticamente - la auditoría la maneja el interceptor
+      // Retornar datos para que el interceptor pueda capturarlos
+      return {
+        id: user.id,
+        email: user.email,
+        deletedData: userDataForAudit
+      };
     } catch (error) {
       // Si hay error por restricciones de integridad referencial, 
       // podemos manejarlo manualmente si es necesario
@@ -267,7 +283,7 @@ export class UsersService {
     }
   }
 
-  async forceRemove(id: number): Promise<void> {
+  async forceRemove(id: number): Promise<{ id: number; email: string; deletedData: any }> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['roles'],
@@ -302,24 +318,29 @@ export class UsersService {
       // 3. Eliminar el usuario
       await transactionalEntityManager.remove(User, user);
 
-      // 4. Registrar en auditoría (después de eliminar exitosamente)
-      try {
-        await this.auditService.logDelete(
-          AuditEntity.USUARIOS,
-          id.toString(),
-          userDataForAudit,
-          `Usuario ${user.email} eliminado forzadamente`,
-        );
-      } catch (auditError) {
-        console.error('Error registrando auditoría de eliminación:', auditError);
-      }
+      // ✅ Backend registra automáticamente - la auditoría la maneja el interceptor
+      // No se registra manualmente para evitar duplicados
     });
+
+    // Mostrar información de usuario eliminado forzadamente
+    console.log(`💥 Usuario eliminado forzadamente: ${user.email} | ID: ${user.id}`);
+
+    // Retornar datos para que el interceptor pueda capturarlos
+    return {
+      id: user.id,
+      email: user.email,
+      deletedData: userDataForAudit
+    };
   }
 
   async deactivate(id: number): Promise<User> {
     const user = await this.findOne(id);
     user.isActive = false;
     await this.userRepository.save(user);
+    
+    // Mostrar información de usuario desactivado
+    console.log(`⏸️ Usuario desactivado: ${user.email} | ID: ${user.id}`);
+    
     return user;
   }
 
@@ -327,6 +348,10 @@ export class UsersService {
     const user = await this.findOne(id);
     user.isActive = true;
     await this.userRepository.save(user);
+    
+    // Mostrar información de usuario activado
+    console.log(`▶️ Usuario activado: ${user.email} | ID: ${user.id}`);
+    
     return user;
   }
 

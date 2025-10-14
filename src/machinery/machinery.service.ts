@@ -109,6 +109,7 @@ export class MachineryService {
       esPropietaria: !!dto.esPropietaria,
     });
     await this.machineryRepo.save(machinery);
+    console.log(`✅ Maquinaria creada: ${machinery.tipo} (Placa: ${machinery.placa})`);
 
     // roles[]
     const rolesArr = Array.isArray(dto.roles) ? dto.roles : [];
@@ -121,10 +122,12 @@ export class MachineryService {
       );
     }
 
-    return this.machineryRepo.findOne({
+    const savedMachinery = await this.machineryRepo.findOne({
       where: { id: machinery.id },
       relations: { roles: true },
     });
+    console.log(`✅ Maquinaria creada: ${savedMachinery?.tipo || 'N/A'} (Placa: ${savedMachinery?.placa || 'N/A'})`);
+    return savedMachinery;
   }
 
   async findAllMachinery() {
@@ -153,6 +156,7 @@ export class MachineryService {
     if (dto.esPropietaria !== undefined) item.esPropietaria = !!dto.esPropietaria;
 
     await this.machineryRepo.save(item);
+    console.log(`✅ Maquinaria actualizada: ${item.tipo} (Placa: ${item.placa})`);
 
     if (Array.isArray(dto.roles)) {
       await this.roleRepo.delete({ machinery: { id } as any });
@@ -170,7 +174,9 @@ export class MachineryService {
   }
 
   async remove(id: number) {
+    const item = await this.machineryRepo.findOne({ where: { id } });
     await this.machineryRepo.delete(id);
+    console.log(`🗑️ Maquinaria eliminada: ${item?.tipo || 'N/A'} (Placa: ${item?.placa || 'N/A'})`);
     return true;
   }
 
@@ -238,7 +244,9 @@ export class MachineryService {
     };
 
     const entity = this.reportRepo.create(entityLike);
-    return this.reportRepo.save(entity);
+    const savedReport = await this.reportRepo.save(entity);
+    console.log(`✅ Reporte municipal creado: ${savedReport.tipoActividad || 'N/A'} (${savedReport.fecha || 'Sin fecha'})`);
+    return savedReport;
   }
 
   findAllReports() {
@@ -284,6 +292,7 @@ export class MachineryService {
     }
 
     const saved = await this.reportRepo.save(report);
+    console.log(`✅ Reporte municipal actualizado: ${saved.tipoActividad || 'N/A'} (${saved.fecha || 'Sin fecha'})`);
     return this.reportRepo.findOne({
       where: { id: saved.id },
       relations: { operador: true, maquinaria: true, materiales: true },
@@ -307,6 +316,7 @@ export class MachineryService {
     row.deletedById  = userId ?? null;
     await this.reportRepo.save(row);
     await this.reportRepo.softDelete(id);
+    console.log(`🗑️ Reporte municipal eliminado: ${row.tipoActividad || 'N/A'} (${row.fecha || 'Sin fecha'})`);
 
     return { ok: true, id, reason: row.deleteReason };
   }
@@ -382,6 +392,7 @@ export class MachineryService {
       where: { id },
       relations: { operador: true, maquinaria: true, materiales: true },
     });
+    console.log(`♻️ Reporte municipal restaurado: ${restoredReport?.tipoActividad || 'N/A'} (${restoredReport?.fecha || 'Sin fecha'})`);
 
     return {
       ...restoredReport,
@@ -435,7 +446,9 @@ export class MachineryService {
       detalles,
     });
 
-    return this.rentalRepo.save(entity);
+    const savedRental = await this.rentalRepo.save(entity);
+    console.log(`✅ Reporte de alquiler creado: ${savedRental.actividad || 'N/A'} (${savedRental.fecha || 'Sin fecha'})`);
+    return savedRental;
   }
 
   findAllRentalReports() {
@@ -468,7 +481,9 @@ export class MachineryService {
     if (dto.fecha !== undefined)    r.fecha    = dto.fecha ? new Date(dto.fecha) as any : r.fecha;
     if (dto.operadorId !== undefined) r.operadorId = dto.operadorId ?? r.operadorId;
 
-    return this.rentalRepo.save(r);
+    const savedRental = await this.rentalRepo.save(r);
+    console.log(`✅ Reporte de alquiler actualizado: ${savedRental.actividad || 'N/A'} (${savedRental.fecha || 'Sin fecha'})`);
+    return savedRental;
   }
 
   async removeRental(id: number, reason: string | null, userId: number | null) {
@@ -479,6 +494,7 @@ export class MachineryService {
     row.deletedById  = userId ?? null;
     await this.rentalRepo.save(row);
     await this.rentalRepo.softDelete(id);
+    console.log(`🗑️ Reporte de alquiler eliminado: ${row.actividad || 'N/A'} (${row.fecha || 'Sin fecha'})`);
 
     return { ok: true, id, reason: row.deleteReason };
   }
@@ -521,6 +537,7 @@ export class MachineryService {
       where: { id },
       relations: ['operador'],
     });
+    console.log(`♻️ Reporte de alquiler restaurado: ${restoredReport?.actividad || 'N/A'} (${restoredReport?.fecha || 'Sin fecha'})`);
 
     return {
       ...restoredReport,
@@ -530,8 +547,10 @@ export class MachineryService {
   }
 
   // ========== Reportes de materiales ==========
-  createMaterialReport(dto: CreateMaterialReportDto) {
-    return this.materialRepo.save(dto);
+  async createMaterialReport(dto: CreateMaterialReportDto) {
+    const savedMaterial = await this.materialRepo.save(dto);
+    console.log(`✅ Reporte de material creado: ${savedMaterial.material || 'N/A'} (Cantidad: ${savedMaterial.cantidad || 'N/A'})`);
+    return savedMaterial;
   }
 
   findAllMaterialReports() {
