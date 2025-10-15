@@ -39,8 +39,6 @@ export class AuditService {
       entityId,
       userId,
       userEmail,
-      userName,
-      userLastname,
       startDate,
       endDate,
       search,
@@ -64,8 +62,6 @@ export class AuditService {
     if (entityId) whereConditions.entityId = entityId;
     if (userId) whereConditions.userId = userId;
     if (userEmail) whereConditions.userEmail = Like(`%${userEmail}%`);
-    if (userName) whereConditions.userName = Like(`%${userName}%`);
-    if (userLastname) whereConditions.userLastname = Like(`%${userLastname}%`);
 
     if (startDate && endDate) {
       whereConditions.timestamp = Between(new Date(startDate), new Date(endDate));
@@ -73,10 +69,57 @@ export class AuditService {
       whereConditions.timestamp = Between(new Date(startDate), new Date());
     }
 
+    // Si hay término de búsqueda general, usar query builder simplificado
     if (search) {
-      whereConditions.description = Like(`%${search}%`);
+      const queryBuilder = this.auditLogRepository.createQueryBuilder('log')
+        .leftJoinAndSelect('log.user', 'user');
+
+      // Aplicar filtros básicos
+      Object.keys(whereConditions).forEach(key => {
+        if (key !== 'timestamp') {
+          queryBuilder.andWhere(`log.${key} = :${key}`, { [key]: whereConditions[key] });
+        }
+      });
+
+      // Aplicar filtro de fecha si existe
+      if (whereConditions.timestamp) {
+        if (startDate && endDate) {
+          queryBuilder.andWhere('log.timestamp BETWEEN :startDate AND :endDate', {
+            startDate: new Date(startDate),
+            endDate: new Date(endDate)
+          });
+        } else if (startDate) {
+          queryBuilder.andWhere('log.timestamp >= :startDate', {
+            startDate: new Date(startDate)
+          });
+        }
+      }
+
+      // Búsqueda solo en campos básicos que funcionan bien
+      queryBuilder.andWhere(
+        '(log.description ILIKE :search OR ' +
+        'log.userEmail ILIKE :search OR ' +
+        'log.entityId ILIKE :search)',
+        { search: `%${search}%` }
+      );
+
+      queryBuilder
+        .orderBy(`log.${sortBy}`, sortOrder)
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      const [logs, total] = await queryBuilder.getManyAndCount();
+
+      return {
+        data: this.transformLogsForResponse(logs),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
     }
 
+    // Si no hay búsqueda, usar findAndCount normal
     const [logs, total] = await this.auditLogRepository.findAndCount({
       where: whereConditions,
       relations: ['user'],
@@ -228,6 +271,38 @@ export class AuditService {
     };
   }
 
+
+
+  /**
+   * Obtener logs agrupados por usuario para identificar duplicados
+   */
+  async getUserActivitySummary() {
+    const summary = await this.auditLogRepository
+      .createQueryBuilder('log')
+      .select('log.userEmail', 'userEmail')
+      .addSelect('log.userName', 'userName') 
+      .addSelect('log.userLastname', 'userLastname')
+      .addSelect('log.userId', 'userId')
+      .addSelect('COUNT(*)', 'totalActions')
+      .addSelect('MAX(log.timestamp)', 'lastActivity')
+      .addSelect('MIN(log.timestamp)', 'firstActivity')
+      .where('log.userId IS NOT NULL')
+      .groupBy('log.userEmail, log.userName, log.userLastname, log.userId')
+      .orderBy('COUNT(*)', 'DESC')
+      .getRawMany();
+
+    return summary.map(item => ({
+      userEmail: item.userEmail,
+      userName: item.userName,
+      userLastname: item.userLastname,
+      userId: item.userId,
+      fullName: `${item.userName || ''} ${item.userLastname || ''}`.trim(),
+      totalActions: parseInt(item.totalActions),
+      lastActivity: item.lastActivity,
+      firstActivity: item.firstActivity,
+    }));
+  }
+
   // Métodos de conveniencia para logging automático
 
   async logCreate(entity: AuditEntity, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
@@ -340,6 +415,8 @@ export class AuditService {
       timestampMs: log.timestamp.getTime()
     }));
   }
+
+
 
   /**
    * Formatear fecha en UTC para mostrar al usuario

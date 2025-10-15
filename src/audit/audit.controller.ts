@@ -75,4 +75,10 @@ export class AuditController {
       limit || 10,
     );
   }
+
+  @Get('users/activity-summary')
+  @UseGuards(SuperAdminGuard)
+  async getUserActivitySummary() {
+    return await this.auditService.getUserActivitySummary();
+  }
 }

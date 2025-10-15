@@ -28,16 +28,6 @@ export class FilterAuditLogsDto {
 
   @IsOptional()
   @Transform(({ value }) => value === '' ? undefined : value)
-  @IsString()
-  userName?: string;
-
-  @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
-  @IsString()
-  userLastname?: string;
-
-  @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
   startDate?: string; // Simplificar validación de fecha
 
   @IsOptional()
