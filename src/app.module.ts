@@ -1,5 +1,5 @@
 // src/app.module.ts
-import { Module, ClassSerializerInterceptor } from '@nestjs/common';
+import { Module, ClassSerializerInterceptor, Controller, Get } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';            // ✅ IMPORTA ESTO
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -26,6 +26,18 @@ import { Report } from './machinery/entities/report.entity';
 import { MachineryRole } from './machinery/entities/machinery-role.entity';
 import { AuditLog } from './audit/entities/audit-log.entity';
 import { Source } from './catalog/entities/source.entity';
+
+@Controller()
+class AppController {
+  @Get('health')
+  getHealth() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'gestion-vial-backend'
+    };
+  }
+}
 
 @Module({
   imports: [
@@ -75,6 +87,7 @@ import { Source } from './catalog/entities/source.entity';
     MachineryModule,
     AuditModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_INTERCEPTOR,               // ✅ ahora sí existe
