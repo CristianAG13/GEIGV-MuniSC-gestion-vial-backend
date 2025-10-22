@@ -29,16 +29,16 @@ export class AuditLog {
   id: string;
 
   @Column({
-    type: 'enum',
-    enum: AuditAction,
+    type: 'varchar',
+    length: 30,
   })
-  action: AuditAction;
+  action: string;
 
   @Column({
-    type: 'enum',
-    enum: AuditEntity,
+    type: 'varchar',
+    length: 50,
   })
-  entity: AuditEntity;
+  entity: string;
 
   @Column({ nullable: true })
   entityId: string;

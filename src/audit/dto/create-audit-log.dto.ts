@@ -1,16 +1,16 @@
-import { IsEnum, IsOptional, IsString, IsObject, IsArray } from 'class-validator';
+import { IsOptional, IsString, IsObject, IsArray, IsIn } from 'class-validator';
 import { AuditAction, AuditEntity } from '../entities/audit-log.entity';
 
 export class CreateAuditLogDto {
-  @IsEnum(AuditAction, {
+  @IsIn(Object.values(AuditAction), {
     message: 'action must be one of the following values: ' + Object.values(AuditAction).join(', ')
   })
-  action: AuditAction;
+  action: string;
 
-  @IsEnum(AuditEntity, {
+  @IsIn(Object.values(AuditEntity), {
     message: 'entity must be one of the following values: ' + Object.values(AuditEntity).join(', ')
   })
-  entity: AuditEntity;
+  entity: string;
 
   @IsOptional()
   @IsString()
