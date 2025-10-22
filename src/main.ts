@@ -21,15 +21,18 @@ async function bootstrap() {
     }),
   );
 
-  // Configurar CORS - Temporalmente permisivo
+  // Configurar CORS
   app.enableCors({
-    origin: true, // Permite todos los orígenes temporalmente
+    origin: [
+      process.env.FRONTEND_URL,
+      'https://geigv-muni-sc-frontend.vercel.app/',
+      /https:\/\/.*\.vercel\.app$/,
+      /https:\/\/.*\.railway\.app$/,
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ].filter(Boolean),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-    exposedHeaders: ['X-Total-Count'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
   });
 
   // Prefijo global para las APIs
@@ -37,9 +40,9 @@ async function bootstrap() {
 
   // Obtener configuración
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT') || 3000;
+  const port = configService.get<number>('PORT');
 
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
   
   console.log(`🚀 Aplicación corriendo en: http://localhost:${port}`);
 }
