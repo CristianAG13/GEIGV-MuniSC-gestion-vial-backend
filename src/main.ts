@@ -23,7 +23,14 @@ async function bootstrap() {
 
   // Configurar CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL ,
+    origin: [
+      process.env.FRONTEND_URL,
+      'https://geigv-munisc-frontend-kqxkysjo-cristianag135-projects.vercel.app',
+      /https:\/\/.*\.vercel\.app$/,
+      /https:\/\/.*\.railway\.app$/,
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ].filter(Boolean),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
