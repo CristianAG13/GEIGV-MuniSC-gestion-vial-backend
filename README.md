@@ -7,7 +7,8 @@
 API RESTful construida con NestJS para gestión de usuarios, autenticación JWT y control de roles.
 
 - **Versión:** 1.0.0
-- **Base URL:** `http://localhost:3000/api/v1`
+- **Base URL (Desarrollo):** `http://localhost:3001/api/v1`
+- **Base URL (Producción):** `http://geigv-munisc-gestion-vial-backend-production.up.railway.app/api/v1`
 - **Base de Datos:** MariaDB
 - **Autenticación:** JWT (JSON Web Tokens)
 
@@ -322,22 +323,22 @@ Authorization: Bearer {token}
 
 ### 1. Verificar que la API funciona
 ```bash
-curl http://localhost:3000/api/v1/roles/test
+curl http://localhost:3001/api/v1/roles/test
 ```
 
 ### 2. Crear roles por defecto
 ```bash
-curl -X POST http://localhost:3000/api/v1/roles/public/default
+curl -X POST http://localhost:3001/api/v1/roles/public/default
 ```
 
 ### 3. Ver roles creados
 ```bash
-curl http://localhost:3000/api/v1/roles/public
+curl http://localhost:3001/api/v1/roles/public
 ```
 
 ### 4. Registrar un usuario
 ```bash
-curl -X POST http://localhost:3000/api/v1/auth/register \
+curl -X POST http://localhost:3001/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "ingeniero@heidy.com",
@@ -369,7 +370,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 ## 🐛 Solución de Problemas
 
 ### Error 404 en endpoints
-- Verificar que la aplicación esté corriendo en el puerto 3000
+- Verificar que la aplicación esté corriendo en el puerto 3001 (desarrollo)
 - Comprobar que uses el prefijo `/api/v1/`
 
 ### Error de conexión a base de datos

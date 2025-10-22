@@ -41,8 +41,8 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Permitir cualquier subdominio de railway.app
-      if (origin.endsWith('.railway.app')) {
+      // Permitir cualquier subdominio de railway.app o up.railway.app
+      if (origin.endsWith('.railway.app') || origin.endsWith('.up.railway.app')) {
         return callback(null, true);
       }
 
