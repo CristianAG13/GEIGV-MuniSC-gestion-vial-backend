@@ -46,6 +46,7 @@ import { Source } from './catalog/entities/source.entity';
     database: config.get<string>('DB_DATABASE'),
     entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog, Source],
     synchronize: config.get('DB_SYNC') === 'true',
+    dropSchema: false, // Cambiar a true temporalmente para recrear todas las tablas
     logging: true,
 
     // ✅ Para evitar desfases de fecha/hora

@@ -52,12 +52,12 @@ export class AuditService {
 
     // Validar y convertir action si es válido
     if (action && Object.values(AuditAction).includes(action as AuditAction)) {
-      whereConditions.action = action as AuditAction;
+      whereConditions.action = action;
     }
     
     // Validar y convertir entity si es válido
     if (entity && Object.values(AuditEntity).includes(entity as AuditEntity)) {
-      whereConditions.entity = entity as AuditEntity;
+      whereConditions.entity = entity;
     }
     if (entityId) whereConditions.entityId = entityId;
     if (userId) whereConditions.userId = userId;
@@ -232,7 +232,7 @@ export class AuditService {
   /**
    * Obtener logs por entidad específica
    */
-  async findLogsByEntity(entity: AuditEntity, entityId: string, page: number = 1, limit: number = 10) {
+  async findLogsByEntity(entity: string, entityId: string, page: number = 1, limit: number = 10) {
     const [logs, total] = await this.auditLogRepository.findAndCount({
       where: { entity, entityId },
       relations: ['user'],
@@ -305,7 +305,7 @@ export class AuditService {
 
   // Métodos de conveniencia para logging automático
 
-  async logCreate(entity: AuditEntity, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
+  async logCreate(entity: string, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.CREATE,
       entity,
@@ -320,7 +320,7 @@ export class AuditService {
     });
   }
 
-  async logUpdate(entity: AuditEntity, entityId: string, beforeData: any, afterData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
+  async logUpdate(entity: string, entityId: string, beforeData: any, afterData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.UPDATE,
       entity,
@@ -336,7 +336,7 @@ export class AuditService {
     });
   }
 
-  async logDelete(entity: AuditEntity, entityId: string, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
+  async logDelete(entity: string, entityId: string, entityData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.DELETE,
       entity,
@@ -387,7 +387,7 @@ export class AuditService {
     });
   }
 
-  async logRestore(entity: AuditEntity, entityId: string, restoredData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
+  async logRestore(entity: string, entityId: string, restoredData: any, description?: string, userId?: string, userEmail?: string, userName?: string, userLastname?: string, userRoles?: string[]) {
     return this.createLog({
       action: AuditAction.RESTORE,
       entity,
