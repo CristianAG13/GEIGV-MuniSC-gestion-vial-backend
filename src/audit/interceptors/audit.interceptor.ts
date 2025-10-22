@@ -94,7 +94,14 @@ export class AuditInterceptor implements NestInterceptor {
           }
 
           // Registrar en auditoría de forma asíncrona
-          await this.auditService.createLog(auditData);
+          setTimeout(async () => {
+            try {
+              await this.auditService.createLog(auditData);
+              console.log('✅ Auditoría registrada correctamente');
+            } catch (auditError) {
+              console.error('❌ Error específico en auditoría:', auditError);
+            }
+          }, 0);
         } catch (error) {
           // Log del error pero no fallar la operación principal
           console.error('Error logging audit:', error);
