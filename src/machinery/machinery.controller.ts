@@ -26,6 +26,7 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { AuditInterceptor, Audit } from '../audit/interceptors/audit.interceptor';
 import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity';
+import { UpdateReportDto } from './dto/update-report.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('machinery')
@@ -114,14 +115,15 @@ export class MachineryController {
     return this.service.findReportById(id);
   }
 
+
   @Patch('report/:id(\\d+)')
-  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
-  updateReport(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: any,
-  ) {
-    return this.service.updateReport(id, dto);
-  }
+@Audit(AuditEntity.REPORTES, AuditAction.UPDATE)
+updateReport(
+  @Param('id', ParseIntPipe) id: number,
+  @Body() dto: UpdateReportDto,   // <— usar el DTO tipado
+) {
+  return this.service.updateReport(id, dto);
+}
 
   @Delete('report/:id(\\d+)')
   @Audit(AuditEntity.REPORTES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente

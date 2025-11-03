@@ -45,11 +45,6 @@ export class CreateReportDto {
   @IsNumber()
   horasExt?: number;
 
-  @IsOptional()
-  @IsNumber()
-  viaticos?: number;
-
-
 
   //Nuevos campos
    @IsOptional()
