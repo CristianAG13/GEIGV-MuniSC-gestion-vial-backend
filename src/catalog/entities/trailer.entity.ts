@@ -18,7 +18,6 @@ export class Trailer {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index()
   @Column({ length: 32 })
   placa: string;
 
