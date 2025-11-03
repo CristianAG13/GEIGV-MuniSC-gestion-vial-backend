@@ -28,6 +28,7 @@ import { Report } from './machinery/entities/report.entity';
 import { MachineryRole } from './machinery/entities/machinery-role.entity';
 import { AuditLog } from './audit/entities/audit-log.entity';
 import { Source } from './catalog/entities/source.entity';
+import { Trailer } from './catalog/entities/trailer.entity';
 
 // Helper function para configuración de base de datos
 function getDatabaseConfig(config: ConfigService) {
@@ -95,7 +96,7 @@ function getDatabaseConfig(config: ConfigService) {
 
         return {
           ...dbConfig,
-          entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog, Source],
+          entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog, Source, Trailer],
           synchronize: config.get('DB_SYNC') === 'true' || config.get('NODE_ENV') !== 'production',
           dropSchema: false, // Cambiar a true temporalmente para recrear todas las tablas
           logging: config.get('NODE_ENV') !== 'production',
