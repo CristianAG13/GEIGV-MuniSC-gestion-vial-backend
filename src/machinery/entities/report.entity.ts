@@ -36,9 +36,6 @@ fecha!: string | null;
   @Column({ type: 'float', nullable: true })
   horasExt: number;
 
-  @Column({ type: 'float', nullable: true })
-  viaticos: number;
-
   //Nuevos campos
   @Column({ type: 'varchar', length: 16, nullable: true })
   placaCarreta?: string;
