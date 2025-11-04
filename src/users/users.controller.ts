@@ -31,7 +31,7 @@ export class UsersController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
@@ -39,7 +39,7 @@ export class UsersController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'manager')
+  @Roles('superadmin', 'ingeniero')
   findAll(@Query('role') role?: string) {
     if (role) {
       return this.usersService.findByRole(role);
@@ -49,21 +49,21 @@ export class UsersController {
 
   @Get('stats')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin', 'ingeniero')
   getStats() {
     return this.usersService.getStats();
   }
 
   @Get(':id')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'manager')
+  @Roles('superadmin', 'ingeniero')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -74,7 +74,7 @@ export class UsersController {
 
   @Post(':id/roles')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.ROLE_CHANGE) // Sin descripción estática para usar la generada automáticamente
   assignRoles(
     @Param('id', ParseIntPipe) id: number,
@@ -85,7 +85,7 @@ export class UsersController {
 
   @Delete(':id/roles/:roleId')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.ROLE_CHANGE) // Sin descripción estática para usar la generada automáticamente
   removeRole(
     @Param('id', ParseIntPipe) id: number,
@@ -96,7 +96,7 @@ export class UsersController {
 
   @Patch(':id/deactivate')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   deactivate(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.deactivate(id);
@@ -104,7 +104,7 @@ export class UsersController {
 
   @Patch(':id/activate')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.activate(id);
@@ -112,7 +112,7 @@ export class UsersController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.USUARIOS, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);

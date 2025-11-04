@@ -249,8 +249,11 @@ export class MachineryService {
     return savedReport;
   }
 
-  findAllReports() {
+  findAllReports(operatorId?: number) {
+    const whereClause = operatorId ? { operador: { id: operatorId } } : {};
+    
     return this.reportRepo.find({
+      where: whereClause,
       relations: { operador: true, maquinaria: true, materiales: true },
       order: { fecha: 'DESC', id: 'DESC' },
     });
@@ -483,8 +486,14 @@ export class MachineryService {
     return savedRental;
   }
 
-  findAllRentalReports() {
-    return this.rentalRepo.find({ relations: ['operador'] });
+  findAllRentalReports(operatorId?: number) {
+    const whereClause = operatorId ? { operador: { id: operatorId } } : {};
+    
+    return this.rentalRepo.find({ 
+      where: whereClause,
+      relations: ['operador'],
+      order: { fecha: 'DESC', id: 'DESC' },
+    });
   }
 
   async findRentalReportById(id: number) {

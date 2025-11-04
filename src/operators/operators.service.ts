@@ -239,4 +239,13 @@ export class OperatorsService {
   return operator.reports;
 }
 
+  async findByUserId(userId: number): Promise<Operator | null> {
+    const operator = await this.operatorsRepository.findOne({
+      where: { userId },
+      relations: ['user']
+    });
+
+    return operator;
+  }
+
 }

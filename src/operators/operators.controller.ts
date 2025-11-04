@@ -29,7 +29,7 @@ export class OperatorsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('superadmin')
   @HttpCode(HttpStatus.CREATED)
   @Audit(AuditEntity.OPERADORES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   create(@Body() createOperatorDto: CreateOperatorDto) {
@@ -38,35 +38,35 @@ export class OperatorsController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin', 'operator')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   findAll() {
     return this.operatorsService.findAll();
   }
 
   @Get(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin', 'operator')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.findOne(id);
   }
 
   @Get(':id/with-user-details')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin', 'operator')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   getOperatorWithUserDetails(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.getOperatorWithUserDetails(id);
   }
 
   @Get('by-identification/:identification')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin', 'operator')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   findByIdentification(@Param('identification') identification: string) {
     return this.operatorsService.findByIdentification(identification);
   }
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -77,7 +77,7 @@ export class OperatorsController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Audit(AuditEntity.OPERADORES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   remove(@Param('id', ParseIntPipe) id: number) {
@@ -86,7 +86,7 @@ export class OperatorsController {
 
   @Patch(':id/associate-user/:userId')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('superadmin')
   @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   associateWithUser(
     @Param('id', ParseIntPipe) id: number,
@@ -97,7 +97,7 @@ export class OperatorsController {
 
   @Patch(':id/remove-user-association')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('superadmin')
   @Audit(AuditEntity.OPERADORES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   removeUserAssociation(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.removeUserAssociation(id);
@@ -105,7 +105,7 @@ export class OperatorsController {
 
   @Get(':id/reports')
 @UseGuards(RolesGuard)
-@Roles('admin', 'superadmin')
+@Roles('superadmin')
 getReports(@Param('id', ParseIntPipe) id: number) {
   return this.operatorsService.getReportsByOperator(id);
 }
