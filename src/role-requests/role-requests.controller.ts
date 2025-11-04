@@ -44,14 +44,14 @@ export class RoleRequestsController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   async findAll() {
     return this.roleRequestsService.findAll();
   }
 
   @Get('pending')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   async findPending() {
     return this.roleRequestsService.findPending();
   }
@@ -64,7 +64,7 @@ export class RoleRequestsController {
 
   @Patch(':requestId/approve')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   @HttpCode(HttpStatus.OK)
   @Audit(AuditEntity.SOLICITUDES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   async approveRequest(@Param('requestId', ParseIntPipe) requestId: number, @Request() req) {
@@ -79,7 +79,7 @@ export class RoleRequestsController {
 
   @Patch(':requestId/reject')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   @HttpCode(HttpStatus.OK)
   @Audit(AuditEntity.SOLICITUDES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   async rejectRequest(
@@ -93,7 +93,7 @@ export class RoleRequestsController {
 
   @Get('stats')
   @UseGuards(RolesGuard)
-  @Roles('ingeniero', 'superadmin')
+  @Roles('superadmin', 'ingeniero')
   async getStats() {
     return this.roleRequestsService.getStats();
   }

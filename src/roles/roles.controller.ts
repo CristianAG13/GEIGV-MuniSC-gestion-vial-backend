@@ -79,7 +79,7 @@ async createDefaultRolesPublic() {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.ROLES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
@@ -87,14 +87,14 @@ async createDefaultRolesPublic() {
 
   @Post('default')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   createDefaultRoles() {
     return this.rolesService.createDefaultRoles();
   }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero', 'manager','superadmin')
+  @Roles('superadmin')
   findAll(@Query('active') active?: string) {
     if (active === 'true') {
       return this.rolesService.findActive();
@@ -104,21 +104,21 @@ async createDefaultRolesPublic() {
 
   @Get('stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   getStats() {
     return this.rolesService.getStats();
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero', 'manager')
+  @Roles('superadmin')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.ROLES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -129,7 +129,7 @@ async createDefaultRolesPublic() {
 
   @Patch(':id/activate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.ROLES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   activate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.activate(id);
@@ -137,7 +137,7 @@ async createDefaultRolesPublic() {
 
   @Patch(':id/deactivate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.ROLES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
   deactivate(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.deactivate(id);
@@ -145,7 +145,7 @@ async createDefaultRolesPublic() {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ingeniero')
+  @Roles('superadmin')
   @Audit(AuditEntity.ROLES, AuditAction.DELETE) // Sin descripción estática para usar la generada automáticamente
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.remove(id);
