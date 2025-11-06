@@ -35,6 +35,13 @@ export class RentalReport {
   @Column({ type: 'date', nullable: true })
   fecha: Date;
 
+  @Column({ nullable: true })
+  codigoCamino: string;
+
+  @Column({ nullable: true })
+  distrito: string;
+
+
   @Column({ type: 'varchar', length: 32, nullable: true })
   fuente: string; // 'KYLCSA' | 'Palo de Arco' | 'Ríos' | 'Tajo'
 
@@ -43,9 +50,6 @@ export class RentalReport {
 
   @Column({ nullable: true })
   operadorId: number;
-
-  @Column('json', { nullable: true })
-  detalles: Record<string, any>; // NUEVO: espejo de municipal
 
   // soft delete + auditoría
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })

@@ -23,11 +23,11 @@ import { Operator } from 'src/operators/entities/operator.entity';
 import { toISODate, daysAgoISO } from '../utils/date-only';
 import { UpdateReportDto } from './dto/update-report.dto';
 
-/** Normaliza estación “N+M” */
+/** ---------- Estación ---------- */
 function normEstacion(s?: string | null) {
   if (!s) return null;
   const m = String(s).match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/);
-  if (!m) return String(s).replace(/\s+/g, '');
+  if (!m) return String(s).replace(/\s+/g, ''); // deja sin espacios (tu comportamiento actual)
   return `${Number(m[1])}+${Number(m[2])}`;
 }
 function splitEstacion(s?: string | null) {
@@ -35,6 +35,76 @@ function splitEstacion(s?: string | null) {
   if (!m) return null;
   return { desde: Number(m[1]), hasta: Number(m[2]) };
 }
+
+/** ---------- Fuente ---------- */
+function normalizeFuente(raw: any): string | null {
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+  if (/^r[ií]os?$/i.test(s)) return 'Ríos';
+  if (/^tajo$/i.test(s)) return 'Tajo';
+  if (/^kylcsa$/i.test(s)) return 'KYLCSA';
+  return s; // p. ej. "Palo de Arco"
+}
+function isRioOTajo(f?: string | null): boolean {
+  const x = normalizeFuente(f);
+  return x === 'Ríos' || x === 'Tajo';
+}
+function isKylcsa(f?: string | null): boolean {
+  return normalizeFuente(f) === 'KYLCSA';
+}
+
+/** ---------- Utilidades ---------- */
+const TIPOS_CON_BOLETA = new Set(['vagoneta', 'cabezal']);
+const onlyDigitsN = (v: any, n: number) => {
+  const s = String(v ?? '').replace(/\D/g, '').slice(0, n);
+  return s.length ? s : null;
+};
+
+/** ---------- Reglas de boleta por TIPO y FUENTE ---------- */
+function applyBoletaRules(
+  rec: { tipoMaquinaria?: string | null; fuente: string | null; boleta: string | null; boletaKylcsa: string | null }
+) {
+  const tipo = String(rec.tipoMaquinaria || '').toLowerCase();
+  const f = normalizeFuente(rec.fuente);
+
+  // si el TIPO no permite boleta, limpiar todo
+  if (!TIPOS_CON_BOLETA.has(tipo)) {
+    rec.boleta = null;
+    rec.boletaKylcsa = null;
+    return;
+  }
+
+  // por FUENTE
+  if (!f) {
+    // sin fuente: permitir boleta municipal opcional, limpiar KYLCSA
+    rec.boletaKylcsa = null;
+    return;
+  }
+  if (f === 'Ríos' || f === 'Tajo') {
+    rec.boleta = null;
+    rec.boletaKylcsa = null;
+    return;
+  }
+  if (f === 'KYLCSA') {
+    rec.boleta = null;
+    // boletaKylcsa permitida
+    return;
+  }
+  // fuente municipal normal: permitir boleta municipal, limpiar KYLCSA
+  rec.boletaKylcsa = null;
+}
+
+/** ---------- Sanitizadores de boletas (6 dígitos) ---------- */
+function sanitizeBoletaMunicipal(v: any): string | null {
+  const d = onlyDigitsN(v, 6);
+  return d && d.length === 6 ? d : d === null ? null : d; // si no son 6, igual lo guardas nulo arriba por reglas
+}
+function sanitizeBoletaK(v: any): string | null {
+  const d = onlyDigitsN(v, 6);
+  return d && d.length === 6 ? d : d === null ? null : d;
+}
+
+
 
 @Injectable()
 export class MachineryService {
@@ -45,7 +115,7 @@ export class MachineryService {
     @InjectRepository(MaterialReport) private materialRepo: Repository<MaterialReport>,
     @InjectRepository(MachineryRole) private readonly roleRepo: Repository<MachineryRole>,
     @InjectRepository(Operator) private readonly opRepo: Repository<Operator>,
-  ) {}
+  ) { }
 
   // ========== Helpers privados ==========
   private nn(v: any) {
@@ -251,7 +321,7 @@ export class MachineryService {
 
   findAllReports(operatorId?: number) {
     const whereClause = operatorId ? { operador: { id: operatorId } } : {};
-    
+
     return this.reportRepo.find({
       where: whereClause,
       relations: { operador: true, maquinaria: true, materiales: true },
@@ -269,70 +339,70 @@ export class MachineryService {
   }
 
   async updateReport(id: number, dto: UpdateReportDto) {
-  const report = await this.reportRepo.findOne({ where: { id } });
-  if (!report) throw new NotFoundException('Reporte no existe');
+    const report = await this.reportRepo.findOne({ where: { id } });
+    if (!report) throw new NotFoundException('Reporte no existe');
 
-  // Normalizadores locales
-  const nn = (v: any) => (typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : v ?? null);
-  const to24h = (s?: string | null) => this.to24h(nn(s) as any);
+    // Normalizadores locales
+    const nn = (v: any) => (typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : v ?? null);
+    const to24h = (s?: string | null) => this.to24h(nn(s) as any);
 
-  // --- merge 'detalles' sin perder claves anteriores ---
-  const detalles =
-    dto.detalles != null
-      ? { ...(report.detalles || {}), ...(dto.detalles || {}) }
-      : report.detalles;
+    // --- merge 'detalles' sin perder claves anteriores ---
+    const detalles =
+      dto.detalles != null
+        ? { ...(report.detalles || {}), ...(dto.detalles || {}) }
+        : report.detalles;
 
-  // --- actualización campo a campo (solo si vienen en dto) ---
-  if (dto.tipoActividad !== undefined || (dto as any).actividad !== undefined) {
-    report.tipoActividad = nn((dto as any).tipoActividad ?? (dto as any).actividad);
-  }
-  if (dto.horasOrd !== undefined) {
-    report.horasOrd = dto.horasOrd === null ? null : Number(dto.horasOrd);
-  }
-  if (dto.horasExt !== undefined) {
-    report.horasExt = dto.horasExt === null ? null : Number(dto.horasExt);
-  }
-  if (dto.horaInicio !== undefined) {
-    report.horaInicio = to24h(dto.horaInicio);
-  }
-  if (dto.horaFin !== undefined) {
-    report.horaFin = to24h(dto.horaFin);
-  }
-  if ((dto as any).horimetro !== undefined) {
-    (report as any).horimetro = (dto as any).horimetro === null ? null : Number((dto as any).horimetro);
-  }
-  if ((dto as any).kilometraje !== undefined) {
-    (report as any).kilometraje = (dto as any).kilometraje === null ? null : Number((dto as any).kilometraje);
-  }
-  if ((dto as any).diesel !== undefined || (dto as any).combustible !== undefined) {
-    (report as any).diesel = (dto as any).diesel ?? (dto as any).combustible ?? null;
-  }
-  if ((dto as any).fecha !== undefined) {
-    report.fecha = (dto as any).fecha ? toISODate((dto as any).fecha) : null; // guarda como 'YYYY-MM-DD'
-  }
-  if ((dto as any).codigoCamino !== undefined) {
-    report.codigoCamino = nn((dto as any).codigoCamino);
-  }
-  if ((dto as any).distrito !== undefined) {
-    report.distrito = nn((dto as any).distrito);
-  }
-  if ((dto as any).estacion !== undefined) {
-    // si ya usas normEstacion arriba, puedes aplicarlo aquí:
-    report.estacion = nn((dto as any).estacion);
-  }
-  if ((dto as any).placaCarreta !== undefined) {
-    (report as any).placaCarreta = nn((dto as any).placaCarreta);
-  }
+    // --- actualización campo a campo (solo si vienen en dto) ---
+    if (dto.tipoActividad !== undefined || (dto as any).actividad !== undefined) {
+      report.tipoActividad = nn((dto as any).tipoActividad ?? (dto as any).actividad);
+    }
+    if (dto.horasOrd !== undefined) {
+      report.horasOrd = dto.horasOrd === null ? null : Number(dto.horasOrd);
+    }
+    if (dto.horasExt !== undefined) {
+      report.horasExt = dto.horasExt === null ? null : Number(dto.horasExt);
+    }
+    if (dto.horaInicio !== undefined) {
+      report.horaInicio = to24h(dto.horaInicio);
+    }
+    if (dto.horaFin !== undefined) {
+      report.horaFin = to24h(dto.horaFin);
+    }
+    if ((dto as any).horimetro !== undefined) {
+      (report as any).horimetro = (dto as any).horimetro === null ? null : Number((dto as any).horimetro);
+    }
+    if ((dto as any).kilometraje !== undefined) {
+      (report as any).kilometraje = (dto as any).kilometraje === null ? null : Number((dto as any).kilometraje);
+    }
+    if ((dto as any).diesel !== undefined || (dto as any).combustible !== undefined) {
+      (report as any).diesel = (dto as any).diesel ?? (dto as any).combustible ?? null;
+    }
+    if ((dto as any).fecha !== undefined) {
+      report.fecha = (dto as any).fecha ? toISODate((dto as any).fecha) : null; // guarda como 'YYYY-MM-DD'
+    }
+    if ((dto as any).codigoCamino !== undefined) {
+      report.codigoCamino = nn((dto as any).codigoCamino);
+    }
+    if ((dto as any).distrito !== undefined) {
+      report.distrito = nn((dto as any).distrito);
+    }
+    if ((dto as any).estacion !== undefined) {
+      // si ya usas normEstacion arriba, puedes aplicarlo aquí:
+      report.estacion = nn((dto as any).estacion);
+    }
+    if ((dto as any).placaCarreta !== undefined) {
+      (report as any).placaCarreta = nn((dto as any).placaCarreta);
+    }
 
-  // aplica detalles merged
-  report.detalles = detalles;
+    // aplica detalles merged
+    report.detalles = detalles;
 
-  const saved = await this.reportRepo.save(report);
-  return this.reportRepo.findOne({
-    where: { id: saved.id },
-    relations: { operador: true, maquinaria: true, materiales: true },
-  });
-}
+    const saved = await this.reportRepo.save(report);
+    return this.reportRepo.findOne({
+      where: { id: saved.id },
+      relations: { operador: true, maquinaria: true, materiales: true },
+    });
+  }
 
   async getDeletedMunicipal() {
     return this.reportRepo.find({
@@ -348,7 +418,7 @@ export class MachineryService {
     if (!row) throw new NotFoundException('Reporte municipal no existe');
 
     row.deleteReason = reason ?? null;
-    row.deletedById  = userId ?? null;
+    row.deletedById = userId ?? null;
     await this.reportRepo.save(row);
     await this.reportRepo.softDelete(id);
     console.log(`🗑️ Reporte municipal eliminado: ${row.tipoActividad || 'N/A'} (${row.fecha || 'Sin fecha'})`);
@@ -359,7 +429,7 @@ export class MachineryService {
   // Filtros auxiliares para municipales
   findReportsByOperatorAndDate(operadorId: number, start: string, end: string) {
     const startStr = toISODate(start);
-    const endStr   = toISODate(end);
+    const endStr = toISODate(end);
 
     return this.reportRepo.find({
       where: {
@@ -394,7 +464,7 @@ export class MachineryService {
 
     if (start || end) {
       const s = start ? toISODate(start) : '1970-01-01';
-      const e = end   ? toISODate(end)   : '9999-12-31';
+      const e = end ? toISODate(end) : '9999-12-31';
       where.fecha = Between(s, e); // strings
     }
 
@@ -443,53 +513,44 @@ export class MachineryService {
       if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
     }
 
-    const fuente = String(dto.fuente || '').trim();
-    const isRioOrTajo = ['ríos','rios','tajo'].includes(fuente.toLowerCase());
-    const isKylcsa = fuente.toUpperCase() === 'KYLCSA';
-
-    const d = dto.detalles ?? {};
-    const detalles: Record<string, any> = {
-      ...d,
-      tipoMaterial: d.tipoMaterial ?? null,
-      cantidadMaterial: d.cantidadMaterial != null ? Number(d.cantidadMaterial) : null,
-      fuente: fuente || null,
-      placaCarreta: d.placaCarreta ?? null,
-      destino: d.destino ?? null,
-      tipoCarga: d.tipoCarga ?? null,
-      placaMaquinariaLlevada: d.placaMaquinariaLlevada ?? null,
-      horaInicio: d.horaInicio ?? null,
-      horaFin: d.horaFin ?? null,
-      codigoCamino: d.codigoCamino ?? null,
-      distrito: d.distrito ?? null,
-    };
+    const fuente = normalizeFuente(dto.fuente);
+    const estacion = normEstacion(dto.estacion);
+    const pair = splitEstacion(estacion);
+    if (pair && pair.hasta < pair.desde) {
+      throw new BadRequestException('La estación “hasta” no puede ser menor que “desde”.');
+    }
 
     const entity = this.rentalRepo.create({
-      tipoMaquinaria: dto.tipoMaquinaria,
+      fecha: dto.fecha ? (toISODate(dto.fecha) as any) : null,
+      codigoCamino: dto.codigoCamino ?? null,
+      distrito: dto.distrito ?? null,
+
+      tipoMaquinaria: dto.tipoMaquinaria ?? null,
       placa: dto.placa ?? null,
       actividad: dto.actividad ?? null,
-      cantidad: dto.cantidad ?? null,
-      horas: dto.horas ?? null,
-      estacion: dto.estacion ?? null,
-      boleta: isRioOrTajo ? null : (isKylcsa ? null : (dto.boleta ?? null)),
-      boletaKylcsa: isKylcsa ? (dto.boletaKylcsa ?? null) : null,
-      fuente: fuente || null,
-      // ⬇️ si en RentalReport.fecha también es 'date', conviene usar toISODate:
-       fecha: dto.fecha ? toISODate(dto.fecha) : null,
-      //fecha: dto.fecha ? (new Date(dto.fecha) as any) : null,
+      cantidad: dto.cantidad == null ? null : Number(dto.cantidad),
+      horas: dto.horas == null ? null : Number(dto.horas),
+      estacion,
+
+      // primero sanitiza, luego las reglas decidirán qué queda nulo
+      boleta: sanitizeBoletaMunicipal(dto.boleta),
+      boletaKylcsa: sanitizeBoletaK((dto as any).boletaKylcsa ?? (dto as any).boletaK ?? null),
+
+      fuente,
       operadorId: dto.operadorId ?? null,
       esAlquiler: true,
-      detalles,
     });
 
-    const savedRental = await this.rentalRepo.save(entity);
-    console.log(`✅ Reporte de alquiler creado: ${savedRental.actividad || 'N/A'} (${savedRental.fecha || 'Sin fecha'})`);
-    return savedRental;
+    applyBoletaRules(entity);
+    const saved = await this.rentalRepo.save(entity);
+    return saved;
   }
+
 
   findAllRentalReports(operatorId?: number) {
     const whereClause = operatorId ? { operador: { id: operatorId } } : {};
-    
-    return this.rentalRepo.find({ 
+
+    return this.rentalRepo.find({
       where: whereClause,
       relations: ['operador'],
       order: { fecha: 'DESC', id: 'DESC' },
@@ -509,22 +570,57 @@ export class MachineryService {
     const r = await this.rentalRepo.findOne({ where: { id } });
     if (!r) throw new NotFoundException('Reporte de alquiler no existe');
 
-    if (dto.actividad !== undefined) r.actividad = dto.actividad ?? null;
-    if (dto.cantidad !== undefined) r.cantidad = dto.cantidad === null ? null : Number(dto.cantidad);
-    if (dto.horas !== undefined)    r.horas    = dto.horas    === null ? null : Number(dto.horas);
-    if (dto.estacion !== undefined) r.estacion = dto.estacion ?? null;
-    if (dto.boleta !== undefined)   r.boleta   = dto.boleta ?? null;
-    if (dto.fuente !== undefined)   r.fuente   = dto.fuente ?? null;
-    if (dto.tipoMaquinaria !== undefined) r.tipoMaquinaria = dto.tipoMaquinaria ?? r.tipoMaquinaria;
-    if (dto.placa !== undefined)    r.placa    = dto.placa ?? r.placa;
-    // ⬇️ igual que arriba: si es 'date' string, usa toISODate
-    // if (dto.fecha !== undefined) r.fecha = dto.fecha ? toISODate(dto.fecha) : r.fecha;
-    if (dto.fecha !== undefined)    r.fecha    = dto.fecha ? new Date(dto.fecha) as any : r.fecha;
-    if (dto.operadorId !== undefined) r.operadorId = dto.operadorId ?? r.operadorId;
+    // operador
+    if (dto.operadorId !== undefined) {
+      if (dto.operadorId === null) r.operadorId = null;
+      else {
+        const operator = await this.opRepo.findOne({ where: { id: Number(dto.operadorId) } });
+        if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
+        r.operadorId = Number(dto.operadorId);
+      }
+    }
 
-    const savedRental = await this.rentalRepo.save(r);
-    console.log(`✅ Reporte de alquiler actualizado: ${savedRental.actividad || 'N/A'} (${savedRental.fecha || 'Sin fecha'})`);
-    return savedRental;
+    // simples
+    if (dto.actividad !== undefined) r.actividad = dto.actividad ?? null;
+    if (dto.cantidad !== undefined) r.cantidad = dto.cantidad == null ? null : Number(dto.cantidad);
+    if (dto.horas !== undefined) r.horas = dto.horas == null ? null : Number(dto.horas);
+    if (dto.tipoMaquinaria !== undefined) r.tipoMaquinaria = dto.tipoMaquinaria ?? r.tipoMaquinaria;
+    if (dto.placa !== undefined) r.placa = dto.placa ?? r.placa;
+    if (dto.codigoCamino !== undefined) r.codigoCamino = dto.codigoCamino ?? null;
+    if (dto.distrito !== undefined) r.distrito = dto.distrito ?? null;
+    if (dto.fecha !== undefined) r.fecha = dto.fecha ? (toISODate(dto.fecha) as any) : null;
+
+    // estación
+    if (dto.estacion !== undefined) {
+      const est = normEstacion(dto.estacion);
+      const pair = splitEstacion(est);
+      if (pair && pair.hasta < pair.desde) {
+        throw new BadRequestException('La estación “hasta” no puede ser menor que “desde”.');
+      }
+      r.estacion = est;
+    }
+
+    // fuente / boletas
+    let touched = false;
+    if (dto.fuente !== undefined) {
+      r.fuente = normalizeFuente(dto.fuente);
+      touched = true;
+    }
+    if (dto.boleta !== undefined) {
+      r.boleta = sanitizeBoletaMunicipal(dto.boleta);
+      touched = true;
+    }
+    if (dto.boletaKylcsa !== undefined || dto.boletaK !== undefined) {
+      (r as any).boletaKylcsa = sanitizeBoletaK(dto.boletaKylcsa ?? dto.boletaK);
+      touched = true;
+    }
+
+    if (touched || dto.tipoMaquinaria !== undefined) {
+      applyBoletaRules(r as any);
+    }
+
+    const saved = await this.rentalRepo.save(r);
+    return saved;
   }
 
   async removeRental(id: number, reason: string | null, userId: number | null) {
@@ -532,7 +628,7 @@ export class MachineryService {
     if (!row) throw new NotFoundException('Reporte de alquiler no existe');
 
     row.deleteReason = reason ?? null;
-    row.deletedById  = userId ?? null;
+    row.deletedById = userId ?? null;
     await this.rentalRepo.save(row);
     await this.rentalRepo.softDelete(id);
     console.log(`🗑️ Reporte de alquiler eliminado: ${row.actividad || 'N/A'} (${row.fecha || 'Sin fecha'})`);
