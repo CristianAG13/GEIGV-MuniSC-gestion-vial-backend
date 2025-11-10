@@ -52,20 +52,36 @@ export class AuthController {
 @Get('profile')
 async getProfile(@Request() req) {
   try {
+    // Validar que req.user existe
+    if (!req.user || !req.user.id) {
+      console.error('❌ Usuario no encontrado en request:', req.user);
+      throw new BadRequestException('Usuario no autenticado');
+    }
+
     const userId = req.user.id;
+    console.log(`👤 Obteniendo perfil para usuario ID: ${userId}`);
     
     // Usar el método existente que ya carga roles
     const user = await this.usersService.findOne(userId);
     
-    return {
+    if (!user) {
+      console.error(`❌ Usuario con ID ${userId} no encontrado en base de datos`);
+      throw new BadRequestException('Usuario no encontrado');
+    }
+    
+    const profileData = {
       id: user.id,
       email: user.email,
       name: user.name,
       lastname: user.lastname,
-      roles: user.roles.map(role => role.name), // Array de nombres de roles
-      rol: user.roles.length > 0 ? user.roles[0].name : null // Primer rol como principal
+      roles: user.roles ? user.roles.map(role => role.name) : [], // Array de nombres de roles
+      rol: user.roles && user.roles.length > 0 ? user.roles[0].name : null // Primer rol como principal
     };
+
+    console.log(`✅ Perfil obtenido exitosamente para: ${user.email}`);
+    return profileData;
   } catch (error) {
+    console.error('❌ Error obteniendo perfil:', error);
     throw new BadRequestException('Error obteniendo perfil');
   }
 }

@@ -20,12 +20,56 @@ export class AuditService {
    */
   async createLog(createAuditLogDto: CreateAuditLogDto): Promise<AuditLog> {
     try {
-      const auditLog = this.auditLogRepository.create(createAuditLogDto);
-      return await this.auditLogRepository.save(auditLog);
+      // Validar datos básicos antes de crear
+      if (!createAuditLogDto.action || !createAuditLogDto.entity) {
+        this.logger.warn('Datos de auditoría incompletos:', createAuditLogDto);
+        return null;
+      }
+
+      // Sanitizar datos para evitar errores de serialización
+      const sanitizedDto = {
+        ...createAuditLogDto,
+        changesAfter: this.sanitizeForDatabase(createAuditLogDto.changesAfter),
+        changesBefore: this.sanitizeForDatabase(createAuditLogDto.changesBefore),
+        userRoles: Array.isArray(createAuditLogDto.userRoles) ? 
+          createAuditLogDto.userRoles : [],
+      };
+
+      const auditLog = this.auditLogRepository.create(sanitizedDto);
+      const savedLog = await this.auditLogRepository.save(auditLog);
+      
+      this.logger.log(`✅ Audit log created: ${sanitizedDto.action} on ${sanitizedDto.entity}`);
+      return savedLog;
     } catch (error) {
-      this.logger.error('Error creating audit log:', error);
+      this.logger.error('❌ Error creating audit log:', {
+        error: error.message,
+        stack: error.stack,
+        data: createAuditLogDto
+      });
       // No lanzamos error para evitar que falle la operación principal
       return null;
+    }
+  }
+
+  /**
+   * Sanitizar datos para base de datos
+   */
+  private sanitizeForDatabase(data: any): any {
+    if (!data) return null;
+    
+    try {
+      // Convertir a JSON y parsearlo para eliminar funciones y referencias circulares
+      const jsonString = JSON.stringify(data, (key, value) => {
+        // Filtrar funciones y propiedades problemáticas
+        if (typeof value === 'function') return undefined;
+        if (key === 'password' || key === 'hash' || key === 'salt') return '[REDACTED]';
+        return value;
+      });
+      
+      return JSON.parse(jsonString);
+    } catch (error) {
+      this.logger.warn('Error sanitizing data for database:', error);
+      return { error: 'Data could not be serialized' };
     }
   }
 

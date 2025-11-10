@@ -133,11 +133,25 @@ export class AuthService {
   }
 
   async validateUser(userId: number): Promise<User | null> {
-    return this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['roles'],
+    try {
+      console.log(`🔍 Validando usuario con ID: ${userId}`);
       
-    });
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['roles'],
+      });
+
+      if (!user) {
+        console.log(`❌ Usuario no encontrado con ID: ${userId}`);
+        return null;
+      }
+
+      console.log(`✅ Usuario encontrado: ${user.email} con ${user.roles?.length || 0} roles`);
+      return user;
+    } catch (error) {
+      console.error(`❌ Error validando usuario ${userId}:`, error);
+      return null;
+    }
   }
 
   // private async generateToken(user: User): Promise<AuthResponse> {

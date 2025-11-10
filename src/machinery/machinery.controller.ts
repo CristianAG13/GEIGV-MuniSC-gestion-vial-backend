@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -22,6 +21,7 @@ import { UpdateMachineryDto } from './dto/update-machinery.dto';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CreateRentalReportDto } from './dto/create-rental-report.dto';
 import { CreateMaterialReportDto } from './dto/create-material-report.dto';
+import { UpdateReportDto } from './dto/update-report.dto';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -142,11 +142,12 @@ export class MachineryController {
     return this.service.findReportById(id);
   }
 
+
   @Patch('report/:id(\\d+)')
-  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE) // Sin descripción estática para usar la generada automáticamente
+  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE)
   async updateReport(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: any,
+    @Body() dto: UpdateReportDto,   // usar el DTO tipado
     @CurrentUser() user: any,
   ) {
     // Si es operario, verificar que el reporte le pertenezca
@@ -157,6 +158,9 @@ export class MachineryController {
       }
       
       const report = await this.service.findReportById(id);
+      if (!report) {
+        throw new NotFoundException('Reporte no encontrado');
+      }
       if (report.operador?.id !== operator.id) {
         throw new ForbiddenException('No tienes permiso para editar este reporte');
       }
@@ -173,14 +177,14 @@ export class MachineryController {
     @Req() req: any, 
   ) {
     const userId = req?.user?.id ?? req?.user?.sub ?? null;  // <-- AÑADIR
-  return this.service.removeMunicipal(id, body?.reason ?? null, userId); // <-- PASAR userId
+    return this.service.removeMunicipal(id, body?.reason ?? null, userId); // <-- PASAR userId
   }
 
   @Patch('report/:id(\\d+)/restore')
   @Roles('superadmin', 'ingeniero')
   @Audit(AuditEntity.REPORTES, AuditAction.RESTORE) // Sin descripción estática para usar la generada automáticamente
   restoreMunicipal(@Param('id', ParseIntPipe) id: number) {
-  return this.service.restoreMunicipal(id);
+    return this.service.restoreMunicipal(id);
   }
 
   // ========= REPORTES DE ALQUILER =========
@@ -254,10 +258,10 @@ export class MachineryController {
      @Req() req: any, 
   ) {
     const userId = req?.user?.id ?? req?.user?.sub ?? null;  // <-- AÑADIR
-  return this.service.removeRental(id, body?.reason ?? null, userId); // <-- PASAR userId
+    return this.service.removeRental(id, body?.reason ?? null, userId); // <-- PASAR userId
   }
 
-   @Get('rental-report/deleted')
+  @Get('rental-report/deleted')
   @Roles('superadmin', 'ingeniero')
   getDeletedRental() {
     return this.service.getDeletedRental();
@@ -267,8 +271,8 @@ export class MachineryController {
   @Roles('superadmin', 'ingeniero')
   @Audit(AuditEntity.REPORTES, AuditAction.RESTORE) // Sin descripción estática para usar la generada automáticamente
   restoreRental(@Param('id', ParseIntPipe) id: number) {
-  return this.service.restoreRental(id);
-}
+    return this.service.restoreRental(id);
+  }
   
   // ---------- REPORTES DE MATERIALES ----------
   @Post('material-report')
@@ -305,4 +309,3 @@ export class MachineryController {
     return this.service.getRentalSummaryByMonth(month);
   }
 }
-

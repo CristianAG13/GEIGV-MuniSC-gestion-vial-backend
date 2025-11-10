@@ -21,6 +21,7 @@ import { Operator } from 'src/operators/entities/operator.entity';
 
 // ⬇️ IMPORTA LOS HELPERS DE FECHAS (asegúrate de la ruta)
 import { toISODate, daysAgoISO } from '../utils/date-only';
+import { UpdateReportDto } from './dto/update-report.dto';
 
 /** Normaliza estación “N+M” */
 function normEstacion(s?: string | null) {
@@ -234,7 +235,6 @@ export class MachineryService {
       diesel: diesel ?? combustible ?? null,
       horasOrd: (dto as any).horasOrd ?? null,
       horasExt: (dto as any).horasExt ?? null,
-      viaticos: (dto as any).viaticos ?? null,
       placaCarreta: this.nn((dto as any).placaCarreta ?? d.placaCarreta),
       horaInicio: this.to24h(this.nn((dto as any).horaInicio ?? d.horaInicio)),
       horaFin: this.to24h(this.nn((dto as any).horaFin ?? d.horaFin)),
@@ -268,39 +268,71 @@ export class MachineryService {
     return r;
   }
 
-  async updateReport(id: number, dto: any) {
-    const report = await this.reportRepo.findOne({ where: { id } });
-    if (!report) throw new NotFoundException('Reporte no existe');
+  async updateReport(id: number, dto: UpdateReportDto) {
+  const report = await this.reportRepo.findOne({ where: { id } });
+  if (!report) throw new NotFoundException('Reporte no existe');
 
-    if (dto.actividad !== undefined || dto.tipoActividad !== undefined) {
-      report.tipoActividad = this.nn(dto.actividad ?? dto.tipoActividad);
-    }
-    if (dto.horasOrd !== undefined) {
-      report.horasOrd = dto.horasOrd === null ? null : Number(dto.horasOrd);
-    }
-    if (dto.horasExt !== undefined) {
-      report.horasExt = dto.horasExt === null ? null : Number(dto.horasExt);
-    }
-    if (dto.viaticos !== undefined) {
-      report.viaticos = dto.viaticos === null ? null : Number(dto.viaticos);
-    }
-    if (dto.horaInicio !== undefined) {
-      report.horaInicio = this.to24h(this.nn(dto.horaInicio));
-    }
-    if (dto.horaFin !== undefined) {
-      report.horaFin = this.to24h(this.nn(dto.horaFin));
-    }
-    if (dto.detalles && typeof dto.detalles === 'object') {
-      report.detalles = { ...(report.detalles || {}), ...dto.detalles };
-    }
+  // Normalizadores locales
+  const nn = (v: any) => (typeof v === 'string' ? (v.trim() === '' ? null : v.trim()) : v ?? null);
+  const to24h = (s?: string | null) => this.to24h(nn(s) as any);
 
-    const saved = await this.reportRepo.save(report);
-    console.log(`✅ Reporte municipal actualizado: ${saved.tipoActividad || 'N/A'} (${saved.fecha || 'Sin fecha'})`);
-    return this.reportRepo.findOne({
-      where: { id: saved.id },
-      relations: { operador: true, maquinaria: true, materiales: true },
-    });
+  // --- merge 'detalles' sin perder claves anteriores ---
+  const detalles =
+    dto.detalles != null
+      ? { ...(report.detalles || {}), ...(dto.detalles || {}) }
+      : report.detalles;
+
+  // --- actualización campo a campo (solo si vienen en dto) ---
+  if (dto.tipoActividad !== undefined || (dto as any).actividad !== undefined) {
+    report.tipoActividad = nn((dto as any).tipoActividad ?? (dto as any).actividad);
   }
+  if (dto.horasOrd !== undefined) {
+    report.horasOrd = dto.horasOrd === null ? null : Number(dto.horasOrd);
+  }
+  if (dto.horasExt !== undefined) {
+    report.horasExt = dto.horasExt === null ? null : Number(dto.horasExt);
+  }
+  if (dto.horaInicio !== undefined) {
+    report.horaInicio = to24h(dto.horaInicio);
+  }
+  if (dto.horaFin !== undefined) {
+    report.horaFin = to24h(dto.horaFin);
+  }
+  if ((dto as any).horimetro !== undefined) {
+    (report as any).horimetro = (dto as any).horimetro === null ? null : Number((dto as any).horimetro);
+  }
+  if ((dto as any).kilometraje !== undefined) {
+    (report as any).kilometraje = (dto as any).kilometraje === null ? null : Number((dto as any).kilometraje);
+  }
+  if ((dto as any).diesel !== undefined || (dto as any).combustible !== undefined) {
+    (report as any).diesel = (dto as any).diesel ?? (dto as any).combustible ?? null;
+  }
+  if ((dto as any).fecha !== undefined) {
+    report.fecha = (dto as any).fecha ? toISODate((dto as any).fecha) : null; // guarda como 'YYYY-MM-DD'
+  }
+  if ((dto as any).codigoCamino !== undefined) {
+    report.codigoCamino = nn((dto as any).codigoCamino);
+  }
+  if ((dto as any).distrito !== undefined) {
+    report.distrito = nn((dto as any).distrito);
+  }
+  if ((dto as any).estacion !== undefined) {
+    // si ya usas normEstacion arriba, puedes aplicarlo aquí:
+    report.estacion = nn((dto as any).estacion);
+  }
+  if ((dto as any).placaCarreta !== undefined) {
+    (report as any).placaCarreta = nn((dto as any).placaCarreta);
+  }
+
+  // aplica detalles merged
+  report.detalles = detalles;
+
+  const saved = await this.reportRepo.save(report);
+  return this.reportRepo.findOne({
+    where: { id: saved.id },
+    relations: { operador: true, maquinaria: true, materiales: true },
+  });
+}
 
   async getDeletedMunicipal() {
     return this.reportRepo.find({

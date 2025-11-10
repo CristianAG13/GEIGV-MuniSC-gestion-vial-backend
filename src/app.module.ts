@@ -14,6 +14,7 @@ import { OperatorsModule } from './operators/operators.module';
 import { MachineryModule } from './machinery/machinery.module';
 import { AuditModule } from './audit/audit.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { SystemModule } from './app/app.module';
 // Entidades
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
@@ -27,6 +28,7 @@ import { Report } from './machinery/entities/report.entity';
 import { MachineryRole } from './machinery/entities/machinery-role.entity';
 import { AuditLog } from './audit/entities/audit-log.entity';
 import { Source } from './catalog/entities/source.entity';
+import { Trailer } from './catalog/entities/trailer.entity';
 
 // Helper function para configuración de base de datos
 function getDatabaseConfig(config: ConfigService) {
@@ -94,7 +96,7 @@ function getDatabaseConfig(config: ConfigService) {
 
         return {
           ...dbConfig,
-          entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog, Source],
+          entities: [User, Role, Permission, RoleRequest, Operator, Report, Machinery, MaterialReport, RentalReport, MachineryRole, AuditLog, Source, Trailer],
           synchronize: config.get('DB_SYNC') === 'true' || config.get('NODE_ENV') !== 'production',
           dropSchema: false, // Cambiar a true temporalmente para recrear todas las tablas
           logging: config.get('NODE_ENV') !== 'production',
@@ -125,6 +127,7 @@ function getDatabaseConfig(config: ConfigService) {
     OperatorsModule,
     MachineryModule,
     AuditModule,
+    SystemModule,
   ],
   providers: [
     {
