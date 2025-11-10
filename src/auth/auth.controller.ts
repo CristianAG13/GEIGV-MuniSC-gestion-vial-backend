@@ -99,4 +99,22 @@ async getProfile(@Request() req) {
     console.log(`📋 Resultado de verificación: ${result.valid ? 'válido' : 'inválido'}`);
     return result;
   }
+
+  @Get('test-email-config')
+  async testEmailConfig() {
+    console.log('🔧 Verificando configuración de email...');
+    
+    try {
+      const result = await this.authService.testEmailConnection();
+      console.log('✅ Configuración de email verificada');
+      return result;
+    } catch (error) {
+      console.error('❌ Error en configuración de email:', error);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
 }
