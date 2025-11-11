@@ -8,11 +8,15 @@ import { VerifyResetTokenDto } from './dto/verify-reset-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthResponse } from './interfaces/auth-response.interface';
 import { UsersService } from 'src/users/users.service';
+import { OperatorsService } from '../operators/operators.service';
+import { CurrentUser } from './decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService,
-  private readonly usersService: UsersService,  
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+    private readonly operatorsService: OperatorsService,
   ) {}
 
   @Get('connection')
@@ -130,6 +134,46 @@ async getProfile(@Request() req) {
         success: false,
         error: error.message,
         timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Obtener el operador asociado al usuario actual
+   */
+  @Get('my-operator')
+  @UseGuards(JwtAuthGuard)
+  async getMyOperator(@CurrentUser() user: any) {
+    try {
+      const userId = user.id; // Del token JWT
+      
+      // Buscar operador asociado al usuario actual
+      const operator = await this.operatorsService.findByUserId(userId);
+      
+      if (!operator) {
+        return {
+          success: false,
+          message: 'No tienes un operador asociado',
+          statusCode: 404
+        };
+      }
+      
+      return {
+        success: true,
+        data: {
+          id: operator.id,
+          name: operator.name,
+          last: operator.last,
+          identification: operator.identification,
+          userId: operator.userId
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error al obtener operador',
+        error: error.message,
+        statusCode: 500
       };
     }
   }
