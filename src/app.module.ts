@@ -15,6 +15,7 @@ import { MachineryModule } from './machinery/machinery.module';
 import { AuditModule } from './audit/audit.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { SystemModule } from './app/app.module';
+import { StatisticsModule } from './statistics/statistics.module';
 // Entidades
 import { User } from './users/entities/user.entity';
 import { Role } from './roles/entities/role.entity';
@@ -127,6 +128,7 @@ function getDatabaseConfig(config: ConfigService) {
     OperatorsModule,
     MachineryModule,
     AuditModule,
+    StatisticsModule,
     SystemModule,
   ],
   providers: [
