@@ -29,11 +29,11 @@ export class AuthService {
     private moduleRef: ModuleRef,
     private usersService: UsersService,
   ) {
-    // Configurar el transporter de Gmail con opciones adicionales
+    // Configurar el transporter de Gmail con opciones adicionales para producción
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
-      port: this.configService.get<number>('EMAIL_PORT'),
+      port: this.configService.get<number>('EMAIL_PORT') || 587,
       secure: false,
       auth: {
         user: this.configService.get('EMAIL_USER'),
@@ -42,6 +42,14 @@ export class AuthService {
       tls: {
         rejectUnauthorized: false
       },
+      // Configuraciones adicionales para producción
+      connectionTimeout: 30000, // 30 segundos para conectar
+      greetingTimeout: 30000,   // 30 segundos para el saludo SMTP
+      socketTimeout: 60000,     // 60 segundos para operaciones de socket
+      // Pool de conexiones para mejor rendimiento en producción
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
     } as any);
   }
 
@@ -217,10 +225,31 @@ export class AuthService {
   };
 }
 
+  // Método auxiliar para validar configuración SMTP
+  private validateEmailConfig(): boolean {
+    const emailUser = this.configService.get('EMAIL_USER');
+    const emailPassword = this.configService.get('EMAIL_PASSWORD');
+    
+    if (!emailUser || !emailPassword) {
+      console.error('❌ Configuración de email incompleta:');
+      console.error(`  EMAIL_USER: ${emailUser ? '✅ Configurado' : '❌ Faltante'}`);
+      console.error(`  EMAIL_PASSWORD: ${emailPassword ? '✅ Configurado' : '❌ Faltante'}`);
+      return false;
+    }
+    
+    console.log('✅ Configuración de email válida');
+    return true;
+  }
+
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
 
     console.log(`🔄 Solicitud de recuperación de contraseña para: ${email}`);
+    
+    // Validar configuración de email antes de proceder
+    if (!this.validateEmailConfig()) {
+      console.warn('⚠️ Configuración de email incompleta, usando modo fallback');
+    }
 
     const user = await this.userRepository.findOne({
       where: { email },
@@ -311,21 +340,37 @@ export class AuthService {
 
       console.log(`📧 Intentando enviar email a: ${email}`);
       
-      // Verificar la conexión SMTP primero
-      await this.transporter.verify();
+      // Crear un timeout personalizado para el envío de email en producción
+      const emailTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Email timeout - operación cancelada después de 30 segundos')), 30000)
+      );
+      
+      // Verificar la conexión SMTP con timeout
+      await Promise.race([
+        this.transporter.verify(),
+        emailTimeout
+      ]);
       console.log('✅ Conexión SMTP verificada exitosamente');
       
-      await this.transporter.sendMail(mailOptions);
+      // Enviar email con timeout
+      await Promise.race([
+        this.transporter.sendMail(mailOptions),
+        emailTimeout
+      ]);
       console.log(`✅ Email de recuperación enviado exitosamente a: ${email}`);
       
     } catch (error) {
       console.error(`❌ Error enviando email a ${email}:`, error);
       
       // Log más específico del error
-      if (error.code === 'EDNS' || error.code === 'ENOTFOUND') {
+      if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT') {
+        console.error('⏱️ Timeout del servidor SMTP. El servicio puede estar sobrecargado o lento.');
+      } else if (error.code === 'EDNS' || error.code === 'ENOTFOUND') {
         console.error('🌐 Error de conexión de red o DNS. Verifica tu conexión a internet.');
       } else if (error.code === 'EAUTH') {
         console.error('🔐 Error de autenticación. Verifica tu email y contraseña de aplicación.');
+      } else if (error.code === 'ECONNABORTED') {
+        console.error('🔌 Conexión SMTP abortada. Servidor SMTP no disponible.');
       } else {
         console.error('📧 Error SMTP:', error.message);
       }
@@ -413,5 +458,79 @@ export class AuthService {
       message: 'Token válido',
       email: user.email,
     };
+  }
+
+  // Método para probar la configuración de email
+  async testEmailConnection(): Promise<{ success: boolean; message: string; config?: any; timestamp: string }> {
+    const timestamp = new Date().toISOString();
+    
+    try {
+      // Validar configuración básica
+      if (!this.validateEmailConfig()) {
+        return {
+          success: false,
+          message: 'Configuración de email incompleta - revisar variables EMAIL_USER y EMAIL_PASSWORD',
+          timestamp,
+        };
+      }
+
+      console.log('🔧 Probando conexión SMTP...');
+      
+      // Crear timeout para la verificación
+      const verifyTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout de conexión SMTP')), 15000)
+      );
+      
+      // Verificar conexión SMTP
+      await Promise.race([
+        this.transporter.verify(),
+        verifyTimeout
+      ]);
+      
+      const emailUser = this.configService.get('EMAIL_USER');
+      const emailPort = this.configService.get('EMAIL_PORT') || 587;
+      
+      return {
+        success: true,
+        message: 'Conexión SMTP exitosa',
+        config: {
+          service: 'gmail',
+          host: 'smtp.gmail.com',
+          port: emailPort,
+          user: emailUser,
+          secure: false,
+          connectionTimeout: '30s',
+          socketTimeout: '60s',
+        },
+        timestamp,
+      };
+      
+    } catch (error) {
+      console.error('❌ Error en prueba de conexión SMTP:', error);
+      
+      let errorMessage = 'Error desconocido';
+      
+      if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT') {
+        errorMessage = 'Timeout de conexión - servidor SMTP lento o no disponible';
+      } else if (error.code === 'EAUTH') {
+        errorMessage = 'Error de autenticación - verificar EMAIL_USER y EMAIL_PASSWORD';
+      } else if (error.code === 'ENOTFOUND') {
+        errorMessage = 'No se puede resolver smtp.gmail.com - problema de DNS';
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMessage = 'Conexión rechazada - puerto SMTP bloqueado o incorrecto';
+      } else {
+        errorMessage = error.message || 'Error de conexión SMTP';
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+        config: {
+          error_code: error.code,
+          error_details: error.message,
+        },
+        timestamp,
+      };
+    }
   }
 }

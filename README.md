@@ -363,7 +363,7 @@ curl -X POST http://localhost:3001/api/v1/auth/register \
 | Rol | Descripción | Permisos |
 |-----|-------------|----------|
 | `ingeniero` | Ingeniero | Acceso completo a todos los recursos |
-| `inspector` | Inspector | Inspección de obras y visualización de estadísticas |
+| `inspector` | Inspector | Inspección de obras, visualización de estadísticas y **acceso al módulo de auditoría** |
 | `operario` | Operario | Acceso básico, gestión de perfil propio |
 | `invitado` | Invitado | Acceso de solo lectura limitado |
 
