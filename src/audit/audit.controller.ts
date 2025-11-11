@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SuperAdminGuard } from './guards/super-admin.guard';
+import { AuditAccessGuard } from './guards/audit-access.guard';
 import { AuditService } from './audit.service';
 import { CreateAuditLogDto } from './dto/create-audit-log.dto';
 import { FilterAuditLogsDto } from './dto/filter-audit-logs.dto';
@@ -35,19 +36,19 @@ export class AuditController {
   }
 
   @Get('logs')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(AuditAccessGuard)
   async findLogs(@Query() filterDto: FilterAuditLogsDto) {
     return await this.auditService.findLogs(filterDto);
   }
 
   @Get('stats')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(AuditAccessGuard)
   async getStats() {
     return await this.auditService.getStats();
   }
 
   @Get('logs/entity/:entity/:id')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(AuditAccessGuard)
   async findLogsByEntity(
     @Param('entity') entity: AuditEntity,
     @Param('id') id: string,
@@ -63,7 +64,7 @@ export class AuditController {
   }
 
   @Get('logs/user/:userId')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(AuditAccessGuard)
   async findLogsByUser(
     @Param('userId') userId: string,
     @Query('page') page?: number,
@@ -77,8 +78,22 @@ export class AuditController {
   }
 
   @Get('users/activity-summary')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(AuditAccessGuard)
   async getUserActivitySummary() {
     return await this.auditService.getUserActivitySummary();
+  }
+
+  @Get('export')
+  @UseGuards(AuditAccessGuard)
+  async exportLogs(@Query() filterDto: FilterAuditLogsDto) {
+    // TODO: Implementar exportación a CSV
+    // Por ahora retorna los datos en formato JSON que el frontend puede convertir
+    const logs = await this.auditService.findLogs(filterDto);
+    return {
+      message: 'Exportación de logs de auditoría',
+      format: 'json',
+      data: logs,
+      timestamp: new Date().toISOString(),
+    };
   }
 }

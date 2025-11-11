@@ -20,7 +20,7 @@ curl -X POST http://localhost:3000/api/v1/audit/log \
   }'
 ```
 
-#### 2. **GET /api/v1/audit/logs** - Consultar Logs (Solo Superadmin)
+#### 2. **GET /api/v1/audit/logs** - Consultar Logs (Superadmin e Inspector)
 ```bash
 # Todos los logs
 curl -X GET "http://localhost:3000/api/v1/audit/logs" \
@@ -39,13 +39,13 @@ curl -X GET "http://localhost:3000/api/v1/audit/logs?search=usuario" \
   -H "Authorization: Bearer SUPERADMIN_JWT_TOKEN"
 ```
 
-#### 3. **GET /api/v1/audit/stats** - Estadísticas (Solo Superadmin)
+#### 3. **GET /api/v1/audit/stats** - Estadísticas (Superadmin e Inspector)
 ```bash
 curl -X GET "http://localhost:3000/api/v1/audit/stats" \
   -H "Authorization: Bearer SUPERADMIN_JWT_TOKEN"
 ```
 
-#### 4. **GET /api/v1/audit/export** - Exportar CSV (Solo Superadmin)
+#### 4. **GET /api/v1/audit/export** - Exportar CSV (Superadmin e Inspector)
 ```bash
 curl -X GET "http://localhost:3000/api/v1/audit/export" \
   -H "Authorization: Bearer SUPERADMIN_JWT_TOKEN" \
@@ -168,7 +168,7 @@ Las fechas deben estar en formato ISO 8601:
 
 ### Para Endpoints de Consulta
 - Requiere JWT de usuario con rol `superadmin`
-- Solo superadministradores pueden ver los logs
+- Solo superadministradores e inspectores pueden ver los logs
 
 ### Obtener JWT Token
 ```bash
@@ -211,11 +211,11 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ```json
 {
   "statusCode": 403,
-  "message": "Acceso denegado: solo superadministradores pueden acceder a los logs de auditoría",
+  "message": "Acceso denegado: solo superadministradores e inspectores pueden acceder a los logs de auditoría",
   "error": "Forbidden"
 }
 ```
-**Solución**: Usar token de superadministrador.
+**Solución**: Usar token de superadministrador o inspector.
 
 ## 🚀 Script de Prueba Rápida
 
