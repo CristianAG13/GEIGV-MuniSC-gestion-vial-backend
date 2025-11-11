@@ -44,6 +44,47 @@ export class OperatorsController {
     return this.operatorsService.findAll();
   }
 
+  /**
+   * Obtener el operador asociado al usuario actual
+   */
+  @Get('my-operator')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
+  async getMyOperator(@CurrentUser() user: any) {
+    try {
+      const userId = user.id; // Del token JWT
+      
+      // Buscar operador asociado al usuario actual
+      const operator = await this.operatorsService.findByUserId(userId);
+      
+      if (!operator) {
+        return {
+          success: false,
+          message: 'No tienes un operador asociado',
+          statusCode: 404
+        };
+      }
+      
+      return {
+        success: true,
+        data: {
+          id: operator.id,
+          name: operator.name,
+          last: operator.last,
+          identification: operator.identification,
+          userId: operator.userId
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Error al obtener operador',
+        error: error.message,
+        statusCode: 500
+      };
+    }
+  }
+
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
@@ -109,47 +150,6 @@ export class OperatorsController {
   @Roles('superadmin')
   getReports(@Param('id', ParseIntPipe) id: number) {
     return this.operatorsService.getReportsByOperator(id);
-  }
-
-  /**
-   * Obtener el operador asociado al usuario actual
-   */
-  @Get('my-operator')
-  @UseGuards(RolesGuard)
-  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
-  async getMyOperator(@CurrentUser() user: any) {
-    try {
-      const userId = user.id; // Del token JWT
-      
-      // Buscar operador asociado al usuario actual
-      const operator = await this.operatorsService.findByUserId(userId);
-      
-      if (!operator) {
-        return {
-          success: false,
-          message: 'No tienes un operador asociado',
-          statusCode: 404
-        };
-      }
-      
-      return {
-        success: true,
-        data: {
-          id: operator.id,
-          name: operator.name,
-          last: operator.last,
-          identification: operator.identification,
-          userId: operator.userId
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Error al obtener operador',
-        error: error.message,
-        statusCode: 500
-      };
-    }
   }
 
 }
