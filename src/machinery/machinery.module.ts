@@ -18,5 +18,6 @@ import { OperatorsModule } from 'src/operators/operators.module';
   ],
   controllers: [MachineryController],
   providers: [MachineryService],
+  exports: [MachineryService],
 })
 export class MachineryModule {}
