@@ -2,7 +2,7 @@
 
 ## Descripción General
 
-El sistema de auditoría está implementado como un módulo global en NestJS que registra automáticamente todas las operaciones CRUD y eventos importantes del sistema. Solo los **superadministradores** tienen acceso a los logs de auditoría.
+El sistema de auditoría está implementado como un módulo global en NestJS que registra automáticamente todas las operaciones CRUD y eventos importantes del sistema. Los **superadministradores** e **inspectores** tienen acceso a los logs de auditoría.
 
 ## Arquitectura del Sistema
 
@@ -10,9 +10,9 @@ El sistema de auditoría está implementado como un módulo global en NestJS que
 
 1. **AuditLog Entity** - Entidad que almacena los logs en la base de datos
 2. **AuditService** - Servicio principal para crear y consultar logs
-3. **AuditController** - Controlador con endpoints para consultar logs (solo superadmin)
+3. **AuditController** - Controlador con endpoints para consultar logs (superadmin e inspector)
 4. **AuditInterceptor** - Interceptor para logging automático
-5. **SuperAdminGuard** - Guard que protege los endpoints de auditoría
+5. **AuditAccessGuard** - Guard que protege los endpoints de auditoría (permite superadmin e inspector)
 
 ## Base de Datos
 
@@ -39,7 +39,7 @@ CREATE TABLE audit_logs (
 
 ## Endpoints de API
 
-### Consulta de Logs (Solo Superadmin)
+### Consulta de Logs (Superadmin e Inspector)
 - `GET /audit/logs` - Obtener logs con filtros y paginación
 - `GET /audit/stats` - Obtener estadísticas de auditoría
 - `GET /audit/export` - Exportar logs a CSV
@@ -386,12 +386,14 @@ interface FilterAuditLogsDto {
 
 ## Configuración de Seguridad
 
-Solo los usuarios con rol `superadmin` pueden acceder a los endpoints de consulta:
+Los usuarios con rol `superadmin` o `inspector` pueden acceder a los endpoints de consulta:
 
 ```typescript
 // Verificar en el frontend antes de mostrar la interfaz
 const canAccessAudit = user.roles.some(role => 
-  role.name === 'superadmin' || role.name === 'super_admin'
+  role.name === 'superadmin' || 
+  role.name === 'super_admin' ||
+  role.name === 'inspector'
 );
 
 if (canAccessAudit) {
