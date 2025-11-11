@@ -51,6 +51,9 @@ export class RentalReport {
   @Column({ nullable: true })
   operadorId: number;
 
+    @Column("json", { nullable: true })
+  detalles: Record<string, any>;
+  
   // soft delete + auditoría
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
   deletedAt?: Date | null;

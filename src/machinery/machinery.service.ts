@@ -520,6 +520,12 @@ export class MachineryService {
       throw new BadRequestException('La estación “hasta” no puede ser menor que “desde”.');
     }
 
+      // ✅ normaliza/acepta detalles si viene (boletas del día, etc.)
+  const detalles =
+    dto.detalles && typeof dto.detalles === 'object'
+      ? dto.detalles
+      : null;
+
     const entity = this.rentalRepo.create({
       fecha: dto.fecha ? (toISODate(dto.fecha) as any) : null,
       codigoCamino: dto.codigoCamino ?? null,
@@ -539,6 +545,7 @@ export class MachineryService {
       fuente,
       operadorId: dto.operadorId ?? null,
       esAlquiler: true,
+      detalles,
     });
 
     applyBoletaRules(entity);
@@ -569,6 +576,8 @@ export class MachineryService {
   async updateRentalReport(id: number, dto: any) {
     const r = await this.rentalRepo.findOne({ where: { id } });
     if (!r) throw new NotFoundException('Reporte de alquiler no existe');
+
+
 
     // operador
     if (dto.operadorId !== undefined) {
@@ -618,6 +627,23 @@ export class MachineryService {
     if (touched || dto.tipoMaquinaria !== undefined) {
       applyBoletaRules(r as any);
     }
+
+    // ✅ merge de detalles si viene en dto
+  if (dto.detalles !== undefined) {
+    if (dto.detalles === null) {
+      r.detalles = null;
+    } else if (typeof dto.detalles === 'object') {
+      const incoming = dto.detalles as Record<string, any>;
+      const prev = (r.detalles || {}) as Record<string, any>;
+
+      // si llega boletas, se reemplaza el array completo
+      const { boletas, ...rest } = incoming;
+      r.detalles = { ...prev, ...rest };
+      if (boletas !== undefined) {
+        (r.detalles as any).boletas = Array.isArray(boletas) ? boletas : null;
+      }
+    }
+  }
 
     const saved = await this.rentalRepo.save(r);
     return saved;
