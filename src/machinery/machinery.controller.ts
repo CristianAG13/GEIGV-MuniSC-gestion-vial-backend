@@ -195,15 +195,10 @@ export class MachineryController {
 
   @Post('rental-report')
   async createRentalReport(@Body() dto: CreateRentalReportDto, @CurrentUser() user: any) {
-    // Si es operario, solo puede crear reportes de alquiler para sí mismo
-    if (user.roles?.some((r: any) => r.name === 'operario')) {
-      const operator = await this.operatorsService.findByUserId(user.id);
-      if (!operator) {
-        throw new ForbiddenException('No tienes un perfil de operario asociado');
-      }
-      
-      // Forzar que el operadorId sea el del usuario actual
-      dto.operadorId = operator.id;
+    // El instructor/ingeniero es el usuario autenticado
+    // Si no se especifica instructorIngenieroId, usar el usuario actual
+    if (!dto.instructorIngenieroId) {
+      dto.instructorIngenieroId = user.id;
     }
     
     return this.service.createRentalReport(dto);
@@ -213,11 +208,7 @@ export class MachineryController {
   async findAllRentalReports(@CurrentUser() user: any) {
     // Si es operario, solo puede ver sus propios reportes de alquiler
     if (user.roles?.some((r: any) => r.name === 'operario')) {
-      const operator = await this.operatorsService.findByUserId(user.id);
-      if (!operator) {
-        throw new ForbiddenException('No tienes un perfil de operario asociado');
-      }
-      return this.service.findAllRentalReports(operator.id);
+      return this.service.findAllRentalReports(user.id);
     }
     
     // Para otros roles, ver todos los reportes de alquiler
@@ -237,13 +228,8 @@ export class MachineryController {
   ) {
     // Si es operario, verificar que el reporte de alquiler le pertenezca
     if (user.roles?.some((r: any) => r.name === 'operario')) {
-      const operator = await this.operatorsService.findByUserId(user.id);
-      if (!operator) {
-        throw new ForbiddenException('No tienes un perfil de operario asociado');
-      }
-      
       const rentalReport = await this.service.findRentalReportById(id);
-      if (rentalReport.operador?.id !== operator.id) {
+      if (rentalReport.instructorIngeniero?.id !== user.id) {
         throw new ForbiddenException('No tienes permiso para editar este reporte de alquiler');
       }
     }

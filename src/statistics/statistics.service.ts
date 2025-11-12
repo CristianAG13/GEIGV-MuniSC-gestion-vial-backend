@@ -334,35 +334,68 @@ export class StatisticsService {
   /**
    * Obtener estadísticas de operadores
    */
-  async getOperatorStats(dateRange?: DateRangeDto): Promise<any> {
-    console.log('=== getOperatorStats: ENTRANDO AL MÉTODO ===');
-    console.log('dateRange recibido:', dateRange);
+  async getOperatorStats(dateRange?: DateRangeDto): Promise<OperatorStatsDto> {
+    this.logger.log('Generando estadísticas de operadores...');
     
     try {
-      console.log('=== getOperatorStats: DENTRO DEL TRY ===');
+      const totalOperators = await this.operatorRepository.count();
+      const activeOperators = totalOperators; // Por ahora todos son activos
       
-      const result = {
-        totalOperators: 2,
-        activeOperators: 2,
-        operatorsWithoutUser: 0,
-        operatorsByStatus: [
-          { status: 'Activo', count: 2 },
-          { status: 'Inactivo', count: 0 }
-        ],
-        topActiveOperators: [],
-        averageHoursPerOperator: 0
-      };
+      // Operadores sin usuario asociado
+      const operatorsWithoutUser = await this.operatorRepository.count({
+        where: { userId: null }
+      });
 
-      console.log('=== getOperatorStats: CREANDO RESULTADO ===', JSON.stringify(result));
-      console.log('=== getOperatorStats: ANTES DEL RETURN ===');
-      
-      return result;
+      // Estado de operadores (activo/inactivo)
+      const operatorsByStatus = [
+        { status: 'Activo', count: totalOperators },
+        { status: 'Inactivo', count: 0 }
+      ];
+
+      // Top operadores más activos (basado en reportes municipales)
+      const topActiveOperatorsRaw = await this.reportRepository
+        .createQueryBuilder('report')
+        .leftJoinAndSelect('report.operador', 'operator')
+        .select('operator.id', 'operatorId')
+        .addSelect('operator.name', 'operatorName')
+        .addSelect('operator.last', 'operatorLast')
+        .addSelect('COUNT(report.id)', 'reportsCount')
+        .addSelect('SUM(COALESCE(report.horasOrd, 0) + COALESCE(report.horasExt, 0))', 'totalHours')
+        .addSelect('MAX(report.fecha)', 'lastReportDate')
+        .where('operator.id IS NOT NULL')
+        .groupBy('operator.id, operator.name, operator.last')
+        .orderBy('COUNT(report.id)', 'DESC')
+        .limit(10)
+        .getRawMany();
+
+      const topActiveOperators = topActiveOperatorsRaw.map(item => ({
+        id: parseInt(item.operatorId),
+        name: `${item.operatorName} ${item.operatorLast}`,
+        reportsCount: parseInt(item.reportsCount),
+        totalHours: parseFloat(item.totalHours) || 0,
+        lastActivity: item.lastReportDate ? new Date(item.lastReportDate) : new Date(),
+      }));
+
+      // Promedio de horas por operador
+      const avgHoursResult = await this.reportRepository
+        .createQueryBuilder('report')
+        .select('AVG(COALESCE(report.horasOrd, 0) + COALESCE(report.horasExt, 0))', 'avgHours')
+        .where('report.operadorId IS NOT NULL')
+        .getRawOne();
+
+      const averageHoursPerOperator = parseFloat(avgHoursResult?.avgHours) || 0;
+
+      return {
+        totalOperators,
+        activeOperators,
+        operatorsWithoutUser,
+        operatorsByStatus,
+        topActiveOperators,
+        averageHoursPerOperator: Math.round(averageHoursPerOperator * 100) / 100,
+      };
     } catch (error) {
-      console.error('=== ERROR EN getOperatorStats ===', error);
-      console.error('Error stack:', error.stack);
+      this.logger.error('Error generando estadísticas de operadores:', error);
       throw error;
-    } finally {
-      console.log('=== getOperatorStats: FINALIZANDO ===');
     }
   }
 

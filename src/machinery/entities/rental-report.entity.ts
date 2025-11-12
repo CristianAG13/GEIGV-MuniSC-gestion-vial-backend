@@ -42,7 +42,7 @@ export class RentalReport {
   esAlquiler: boolean;
 
   @Column({ nullable: true })
-  operadorId: number;
+  instructorIngenieroId: number;
 
   @Column('json', { nullable: true })
   detalles: Record<string, any>; // NUEVO: espejo de municipal
@@ -61,7 +61,7 @@ export class RentalReport {
   @JoinColumn({ name: 'deleted_by_id' })
   deletedBy?: User | null;
 
-  @ManyToOne(() => Operator, { nullable: true })
-  @JoinColumn({ name: 'operadorId' })
-  operador: Operator;
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'instructorIngenieroId' })
+  instructorIngeniero: User;
 }

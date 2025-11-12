@@ -18,6 +18,7 @@ import { CreateMaterialReportDto } from './dto/create-material-report.dto';
 import { UpdateMachineryDto } from './dto/update-machinery.dto';
 import { MachineryRole } from './entities/machinery-role.entity';
 import { Operator } from 'src/operators/entities/operator.entity';
+import { User } from 'src/users/entities/user.entity';
 
 // ⬇️ IMPORTA LOS HELPERS DE FECHAS (asegúrate de la ruta)
 import { toISODate, daysAgoISO } from '../utils/date-only';
@@ -45,6 +46,7 @@ export class MachineryService {
     @InjectRepository(MaterialReport) private materialRepo: Repository<MaterialReport>,
     @InjectRepository(MachineryRole) private readonly roleRepo: Repository<MachineryRole>,
     @InjectRepository(Operator) private readonly opRepo: Repository<Operator>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
   // ========== Helpers privados ==========
@@ -438,9 +440,9 @@ export class MachineryService {
 
   // ========== Reportes de alquiler ==========
   async createRentalReport(dto: CreateRentalReportDto) {
-    if (dto.operadorId) {
-      const operator = await this.opRepo.findOne({ where: { id: Number(dto.operadorId) } });
-      if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
+    if (dto.instructorIngenieroId) {
+      const user = await this.userRepo.findOne({ where: { id: Number(dto.instructorIngenieroId) } });
+      if (!user) throw new BadRequestException(`Usuario ${dto.instructorIngenieroId} no existe`);
     }
 
     const fuente = String(dto.fuente || '').trim();
@@ -476,22 +478,29 @@ export class MachineryService {
       // ⬇️ si en RentalReport.fecha también es 'date', conviene usar toISODate:
        fecha: dto.fecha ? toISODate(dto.fecha) : null,
       //fecha: dto.fecha ? (new Date(dto.fecha) as any) : null,
-      operadorId: dto.operadorId ?? null,
+      instructorIngenieroId: dto.instructorIngenieroId ?? null,
       esAlquiler: true,
       detalles,
     });
 
     const savedRental = await this.rentalRepo.save(entity);
     console.log(`✅ Reporte de alquiler creado: ${savedRental.actividad || 'N/A'} (${savedRental.fecha || 'Sin fecha'})`);
-    return savedRental;
+    
+    // Recargar con la relación del instructor/ingeniero para devolver el nombre completo
+    const rentalWithRelations = await this.rentalRepo.findOne({
+      where: { id: savedRental.id },
+      relations: ['instructorIngeniero'],
+    });
+    
+    return rentalWithRelations;
   }
 
   findAllRentalReports(operatorId?: number) {
-    const whereClause = operatorId ? { operador: { id: operatorId } } : {};
+    const whereClause = operatorId ? { instructorIngeniero: { id: operatorId } } : {};
     
     return this.rentalRepo.find({ 
       where: whereClause,
-      relations: ['operador'],
+      relations: ['instructorIngeniero', 'instructorIngeniero.roles'],
       order: { fecha: 'DESC', id: 'DESC' },
     });
   }
@@ -499,7 +508,7 @@ export class MachineryService {
   async findRentalReportById(id: number) {
     const r = await this.rentalRepo.findOne({
       where: { id },
-      relations: { operador: true },
+      relations: { instructorIngeniero: { roles: true } },
     });
     if (!r) throw new NotFoundException('Reporte de alquiler no existe');
     return r;
@@ -520,7 +529,7 @@ export class MachineryService {
     // ⬇️ igual que arriba: si es 'date' string, usa toISODate
     // if (dto.fecha !== undefined) r.fecha = dto.fecha ? toISODate(dto.fecha) : r.fecha;
     if (dto.fecha !== undefined)    r.fecha    = dto.fecha ? new Date(dto.fecha) as any : r.fecha;
-    if (dto.operadorId !== undefined) r.operadorId = dto.operadorId ?? r.operadorId;
+    if (dto.instructorIngenieroId !== undefined) r.instructorIngenieroId = dto.instructorIngenieroId ?? r.instructorIngenieroId;
 
     const savedRental = await this.rentalRepo.save(r);
     console.log(`✅ Reporte de alquiler actualizado: ${savedRental.actividad || 'N/A'} (${savedRental.fecha || 'Sin fecha'})`);
@@ -542,8 +551,8 @@ export class MachineryService {
 
   findRentalReportsByOperator(operadorId: number) {
     return this.rentalRepo.find({
-      where: { operadorId },
-      relations: ['operador'],
+      where: { instructorIngenieroId: operadorId },
+      relations: ['instructorIngeniero'],
     });
   }
 
@@ -552,7 +561,7 @@ export class MachineryService {
       withDeleted: true,
       where: { deletedAt: Not(IsNull()) },
       order: { deletedAt: 'DESC', id: 'DESC' },
-      relations: { operador: true, deletedBy: true },
+      relations: { instructorIngeniero: true, deletedBy: true },
     });
   }
 
@@ -560,7 +569,7 @@ export class MachineryService {
     const row = await this.rentalRepo.findOne({
       where: { id },
       withDeleted: true,
-      relations: ['operador'],
+      relations: ['instructorIngeniero'],
     });
     if (!row) throw new NotFoundException('Reporte de alquiler no existe');
 
@@ -576,7 +585,7 @@ export class MachineryService {
 
     const restoredReport = await this.rentalRepo.findOne({
       where: { id },
-      relations: ['operador'],
+      relations: ['instructorIngeniero'],
     });
     console.log(`♻️ Reporte de alquiler restaurado: ${restoredReport?.actividad || 'N/A'} (${restoredReport?.fecha || 'Sin fecha'})`);
 
