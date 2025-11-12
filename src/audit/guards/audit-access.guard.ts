@@ -16,11 +16,12 @@ export class AuditAccessGuard implements CanActivate {
     const hasAccess = user.roles.some((userRole: any) => 
       userRole.name === 'superadmin' || 
       userRole.name === 'super_admin' ||
+      userRole.name === 'ingeniero' ||
       userRole.name === 'inspector'
     );
 
     if (!hasAccess) {
-      throw new ForbiddenException('Acceso denegado: solo superadministradores e inspectores pueden acceder a los logs de auditoría');
+      throw new ForbiddenException('Acceso denegado: solo superadministradores, ingenieros e inspectores pueden acceder a los logs de auditoría');
     }
 
     return true;

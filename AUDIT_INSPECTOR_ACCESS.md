@@ -41,14 +41,14 @@ Se registró el nuevo `AuditAccessGuard` como provider.
 | Rol | Acceso | Descripción |
 |-----|--------|-------------|
 | `superadmin` | ✅ Completo | Acceso total a todos los logs y estadísticas |
+| `ingeniero` | ✅ Solo lectura | Puede ver logs y estadísticas para inspeccionar actividad |
 | `inspector` | ✅ Solo lectura | Puede ver logs y estadísticas para inspeccionar actividad |
-| `ingeniero` | ❌ Sin acceso | No tiene permisos de auditoría |
 | `operario` | ❌ Sin acceso | No tiene permisos de auditoría |
 | `invitado` | ❌ Sin acceso | No tiene permisos de auditoría |
 
-## Funcionalidades Disponibles para Inspector
+## Funcionalidades Disponibles para Ingeniero e Inspector
 
-Los inspectores pueden:
+Los ingenieros e inspectores pueden:
 
 1. **Ver Logs de Auditoría**:
    ```http
@@ -77,7 +77,7 @@ Los inspectores pueden:
 
 ## Permisos NO Incluidos
 
-Los inspectores **NO** pueden:
+Los ingenieros e inspectores **NO** pueden:
 - Crear logs manualmente (`POST /audit/log`)
 - Modificar configuraciones del sistema
 - Eliminar logs de auditoría
@@ -92,6 +92,7 @@ Para validar en el frontend si un usuario puede acceder al módulo de auditoría
 const canAccessAudit = user.roles.some(role => 
   role.name === 'superadmin' || 
   role.name === 'super_admin' ||
+  role.name === 'ingeniero' ||
   role.name === 'inspector'
 );
 
