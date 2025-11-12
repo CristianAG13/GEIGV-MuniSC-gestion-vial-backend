@@ -215,4 +215,7 @@ curl https://geigv-munisc-gestion-vial-backend-production.up.railway.app/api/v1/
 ## 🔄 Última Actualización
 - **Fecha**: 2025-11-12
 - **Estado**: ✅ Configurado correctamente
-- **Verificado**: Endpoint `/me` accesible para inspectores
+- **Cambios recientes**:
+  - ✅ Endpoint `/me` accesible para inspectores
+  - ✅ Endpoints de reportes de alquiler (`rental-report`) accesibles para inspectores
+  - ✅ Creación, listado, visualización y edición de boletas de alquiler permitidos
