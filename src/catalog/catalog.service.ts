@@ -37,13 +37,11 @@ export class CatalogService {
   }
 
   async remove(id: number) {
-    const row = await this.repo.findOne({ where: { id } });
-    if (!row) throw new NotFoundException('No existe el registro');
-    // Si prefieres “desactivar”:
-    row.activo = false;
-    await this.repo.save(row);
-    // O si quieres soft delete real:
-    // await this.repo.softDelete(id);
-    return { ok: true };
+  // Hard delete directo
+  const result = await this.repo.delete(id);
+  if (!result.affected) {
+    throw new NotFoundException('No existe el registro');
   }
+  return { ok: true };
+}
 }
