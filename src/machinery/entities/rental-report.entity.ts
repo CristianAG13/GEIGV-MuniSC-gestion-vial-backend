@@ -51,7 +51,10 @@ export class RentalReport {
   @Column({ nullable: true })
   instructorIngenieroId: number;
 
-    @Column("json", { nullable: true })
+  @Column({ nullable: true })
+  operadorId: number;
+
+  @Column("json", { nullable: true })
   detalles: Record<string, any>;
   
   // soft delete + auditoría
@@ -71,4 +74,8 @@ export class RentalReport {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'instructorIngenieroId' })
   instructorIngeniero: User;
+
+  @ManyToOne(() => Operator, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'operadorId' })
+  operador: Operator;
 }
