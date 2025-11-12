@@ -21,14 +21,33 @@ Un **inspector** tiene los siguientes permisos en el sistema:
 }
 ```
 
-#### 2. **GET `/api/v1/audit/logs`** ✅
+#### 2. **POST `/api/v1/machinery/rental-report`** ✅
+- **Descripción**: Crear reportes de alquiler (boletas de alquiler)
+- **Propósito**: Permite al inspector crear boletas de alquiler
+- **Roles permitidos**: `superadmin`, `ingeniero`, `inspector`
+- **Nota**: El `instructorIngenieroId` se asigna automáticamente al ID del usuario actual si no se especifica
+
+#### 3. **GET `/api/v1/machinery/rental-report`** ✅
+- **Descripción**: Listar reportes de alquiler
+- **Propósito**: Permite al inspector ver todos los reportes de alquiler
+- **Roles permitidos**: `superadmin`, `ingeniero`, `inspector`
+
+#### 4. **GET `/api/v1/machinery/rental-report/:id`** ✅
+- **Descripción**: Obtener detalles de un reporte de alquiler específico
+- **Roles permitidos**: `superadmin`, `ingeniero`, `inspector`
+
+#### 5. **PATCH `/api/v1/machinery/rental-report/:id`** ✅
+- **Descripción**: Actualizar un reporte de alquiler
+- **Roles permitidos**: `superadmin`, `ingeniero`, `inspector`
+
+#### 6. **GET `/api/v1/audit/logs`** ✅
 - **Descripción**: Obtener logs de auditoría (solo los propios)
 - **Roles permitidos**: `superadmin`, `ingeniero`, `inspector`
 - **Filtros automáticos para inspectores**:
   - Solo ve registros donde él es el autor (`userId`)
   - No puede ver registros de otros usuarios
 
-#### 3. **GET `/api/v1/audit/my-logs`** ✅
+#### 7. **GET `/api/v1/audit/my-logs`** ✅
 - **Descripción**: Obtener solo los logs propios del inspector
 - **Roles permitidos**: `superadmin`, `ingeniero`, `inspector`
 

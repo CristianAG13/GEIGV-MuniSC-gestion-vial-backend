@@ -194,6 +194,8 @@ export class MachineryController {
   // getDeletedRental() { return this.service.getDeletedRental(); }
 
   @Post('rental-report')
+  @Roles('superadmin', 'ingeniero', 'inspector')
+  @Audit(AuditEntity.REPORTES, AuditAction.CREATE)
   async createRentalReport(@Body() dto: CreateRentalReportDto, @CurrentUser() user: any) {
     // El instructor/ingeniero es el usuario autenticado
     // Si no se especifica instructorIngenieroId, usar el usuario actual
@@ -205,6 +207,7 @@ export class MachineryController {
   }
 
   @Get('rental-report')
+  @Roles('superadmin', 'ingeniero', 'inspector')
   async findAllRentalReports(@CurrentUser() user: any) {
     // Si es operario, solo puede ver sus propios reportes de alquiler
     if (user.roles?.some((r: any) => r.name === 'operario')) {
@@ -216,11 +219,14 @@ export class MachineryController {
   }
 
   @Get('rental-report/:id(\\d+)')
+  @Roles('superadmin', 'ingeniero', 'inspector')
   findRentalReportById(@Param('id', ParseIntPipe) id: number) {
     return this.service.findRentalReportById(id);
   }
 
   @Patch('rental-report/:id(\\d+)')
+  @Roles('superadmin', 'ingeniero', 'inspector')
+  @Audit(AuditEntity.REPORTES, AuditAction.UPDATE)
   async updateRentalReport(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: any,
