@@ -6,7 +6,7 @@ export class CreateRentalReportDto {
 
   @IsOptional()
   @IsNumber()
-  operadorId?: number;
+  instructorIngenieroId?: number;
 
   @IsOptional()
   @IsString()

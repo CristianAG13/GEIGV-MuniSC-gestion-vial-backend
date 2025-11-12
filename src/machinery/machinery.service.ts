@@ -18,8 +18,8 @@ import { CreateMaterialReportDto } from './dto/create-material-report.dto';
 import { UpdateMachineryDto } from './dto/update-machinery.dto';
 import { MachineryRole } from './entities/machinery-role.entity';
 import { Operator } from 'src/operators/entities/operator.entity';
+import { User } from 'src/users/entities/user.entity';
 
-// ⬇️ IMPORTA LOS HELPERS DE FECHAS (asegúrate de la ruta)
 import { toISODate, daysAgoISO } from '../utils/date-only';
 import { UpdateReportDto } from './dto/update-report.dto';
 
@@ -97,7 +97,7 @@ function applyBoletaRules(
 /** ---------- Sanitizadores de boletas (6 dígitos) ---------- */
 function sanitizeBoletaMunicipal(v: any): string | null {
   const d = onlyDigitsN(v, 6);
-  return d && d.length === 6 ? d : d === null ? null : d; // si no son 6, igual lo guardas nulo arriba por reglas
+  return d && d.length === 6 ? d : d === null ? null : d;
 }
 function sanitizeBoletaK(v: any): string | null {
   const d = onlyDigitsN(v, 6);
@@ -115,7 +115,8 @@ export class MachineryService {
     @InjectRepository(MaterialReport) private materialRepo: Repository<MaterialReport>,
     @InjectRepository(MachineryRole) private readonly roleRepo: Repository<MachineryRole>,
     @InjectRepository(Operator) private readonly opRepo: Repository<Operator>,
-  ) { }
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+  ) {}
 
   // ========== Helpers privados ==========
   private nn(v: any) {
@@ -387,8 +388,7 @@ export class MachineryService {
       report.distrito = nn((dto as any).distrito);
     }
     if ((dto as any).estacion !== undefined) {
-      // si ya usas normEstacion arriba, puedes aplicarlo aquí:
-      report.estacion = nn((dto as any).estacion);
+      report.estacion = normEstacion(nn((dto as any).estacion));
     }
     if ((dto as any).placaCarreta !== undefined) {
       (report as any).placaCarreta = nn((dto as any).placaCarreta);
@@ -508,9 +508,10 @@ export class MachineryService {
 
   // ========== Reportes de alquiler ==========
   async createRentalReport(dto: CreateRentalReportDto) {
-    if (dto.operadorId) {
-      const operator = await this.opRepo.findOne({ where: { id: Number(dto.operadorId) } });
-      if (!operator) throw new BadRequestException(`Operador ${dto.operadorId} no existe`);
+    // valida instructor/ingeniero si viene
+    if (dto.instructorIngenieroId) {
+      const user = await this.userRepo.findOne({ where: { id: Number(dto.instructorIngenieroId) } });
+      if (!user) throw new BadRequestException(`Usuario ${dto.instructorIngenieroId} no existe`);
     }
 
     const fuente = normalizeFuente(dto.fuente);
@@ -520,11 +521,11 @@ export class MachineryService {
       throw new BadRequestException('La estación “hasta” no puede ser menor que “desde”.');
     }
 
-      // ✅ normaliza/acepta detalles si viene (boletas del día, etc.)
-  const detalles =
-    dto.detalles && typeof dto.detalles === 'object'
-      ? dto.detalles
-      : null;
+    // acepta detalles si viene (boletas del día, etc.)
+    const detalles =
+      dto.detalles && typeof dto.detalles === 'object'
+        ? dto.detalles
+        : null;
 
     const entity = this.rentalRepo.create({
       fecha: dto.fecha ? (toISODate(dto.fecha) as any) : null,
@@ -544,22 +545,33 @@ export class MachineryService {
 
       fuente,
       operadorId: dto.operadorId ?? null,
+      instructorIngenieroId: dto.instructorIngenieroId ?? null,
       esAlquiler: true,
       detalles,
     });
 
-    applyBoletaRules(entity);
+    // aplica reglas de boletas según tipo y fuente
+    applyBoletaRules(entity as any);
+
     const saved = await this.rentalRepo.save(entity);
-    return saved;
+
+    // recargar relaciones relevantes para respuesta
+    const rentalWithRelations = await this.rentalRepo.findOne({
+      where: { id: saved.id },
+      relations: ['instructorIngeniero', 'operador'],
+    });
+
+    console.log(`✅ Reporte de alquiler creado: ${saved.actividad || 'N/A'} (${saved.fecha || 'Sin fecha'})`);
+    return rentalWithRelations ?? saved;
   }
 
 
   findAllRentalReports(operatorId?: number) {
-    const whereClause = operatorId ? { operador: { id: operatorId } } : {};
+    const whereClause = operatorId ? { instructorIngeniero: { id: operatorId } } : {};
 
     return this.rentalRepo.find({
       where: whereClause,
-      relations: ['operador'],
+      relations: ['instructorIngeniero', 'instructorIngeniero.roles'],
       order: { fecha: 'DESC', id: 'DESC' },
     });
   }
@@ -567,7 +579,7 @@ export class MachineryService {
   async findRentalReportById(id: number) {
     const r = await this.rentalRepo.findOne({
       where: { id },
-      relations: { operador: true },
+      relations: { instructorIngeniero: { roles: true } },
     });
     if (!r) throw new NotFoundException('Reporte de alquiler no existe');
     return r;
@@ -576,8 +588,6 @@ export class MachineryService {
   async updateRentalReport(id: number, dto: any) {
     const r = await this.rentalRepo.findOne({ where: { id } });
     if (!r) throw new NotFoundException('Reporte de alquiler no existe');
-
-
 
     // operador
     if (dto.operadorId !== undefined) {
@@ -629,21 +639,21 @@ export class MachineryService {
     }
 
     // ✅ merge de detalles si viene en dto
-  if (dto.detalles !== undefined) {
-    if (dto.detalles === null) {
-      r.detalles = null;
-    } else if (typeof dto.detalles === 'object') {
-      const incoming = dto.detalles as Record<string, any>;
-      const prev = (r.detalles || {}) as Record<string, any>;
+    if (dto.detalles !== undefined) {
+      if (dto.detalles === null) {
+        r.detalles = null;
+      } else if (typeof dto.detalles === 'object') {
+        const incoming = dto.detalles as Record<string, any>;
+        const prev = (r.detalles || {}) as Record<string, any>;
 
-      // si llega boletas, se reemplaza el array completo
-      const { boletas, ...rest } = incoming;
-      r.detalles = { ...prev, ...rest };
-      if (boletas !== undefined) {
-        (r.detalles as any).boletas = Array.isArray(boletas) ? boletas : null;
+        // si llega boletas, se reemplaza el array completo
+        const { boletas, ...rest } = incoming;
+        r.detalles = { ...prev, ...rest };
+        if (boletas !== undefined) {
+          (r.detalles as any).boletas = Array.isArray(boletas) ? boletas : null;
+        }
       }
     }
-  }
 
     const saved = await this.rentalRepo.save(r);
     return saved;
@@ -664,8 +674,8 @@ export class MachineryService {
 
   findRentalReportsByOperator(operadorId: number) {
     return this.rentalRepo.find({
-      where: { operadorId },
-      relations: ['operador'],
+      where: { instructorIngenieroId: operadorId },
+      relations: ['instructorIngeniero'],
     });
   }
 
@@ -674,7 +684,7 @@ export class MachineryService {
       withDeleted: true,
       where: { deletedAt: Not(IsNull()) },
       order: { deletedAt: 'DESC', id: 'DESC' },
-      relations: { operador: true, deletedBy: true },
+      relations: { instructorIngeniero: true, deletedBy: true },
     });
   }
 
@@ -682,7 +692,7 @@ export class MachineryService {
     const row = await this.rentalRepo.findOne({
       where: { id },
       withDeleted: true,
-      relations: ['operador'],
+      relations: ['instructorIngeniero'],
     });
     if (!row) throw new NotFoundException('Reporte de alquiler no existe');
 
@@ -698,7 +708,7 @@ export class MachineryService {
 
     const restoredReport = await this.rentalRepo.findOne({
       where: { id },
-      relations: ['operador'],
+      relations: ['instructorIngeniero'],
     });
     console.log(`♻️ Reporte de alquiler restaurado: ${restoredReport?.actividad || 'N/A'} (${restoredReport?.fecha || 'Sin fecha'})`);
 

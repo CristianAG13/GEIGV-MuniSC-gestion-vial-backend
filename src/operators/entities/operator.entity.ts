@@ -49,7 +49,6 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn,
          CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Report } from '../../machinery/entities/report.entity';
-import { RentalReport } from '../../machinery/entities/rental-report.entity';
 
 
 @Entity('operators')
@@ -83,11 +82,7 @@ export class Operator {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  // Relación con Report
+  // Relación con Report (boletas municipales)
   @OneToMany(() => Report, (report) => report.operador)
   reports: Report[];
-  
-  // Relación con RentalReport
-  @OneToMany(() => RentalReport, (rentalReport) => rentalReport.operador)
-  rentalReports: RentalReport[];
 }
