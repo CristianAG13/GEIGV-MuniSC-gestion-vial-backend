@@ -9,6 +9,10 @@ export class CreateRentalReportDto {
   instructorIngenieroId?: number;
 
   @IsOptional()
+  @IsNumber()
+  operadorId?: number;
+
+  @IsOptional()
   @IsString()
   placa?: string;
 
