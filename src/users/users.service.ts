@@ -114,6 +114,28 @@ export class UsersService {
     return user;
   }
 
+  /**
+   * Obtener información básica del usuario actual (para inspectores/ingenieros)
+   * Retorna solo los datos necesarios para rellenar boletas
+   */
+  async getMyInfo(userId: number): Promise<{
+    id: number;
+    name: string;
+    lastname: string;
+    email: string;
+    roles: string[];
+  }> {
+    const user = await this.findOne(userId);
+
+    return {
+      id: user.id,
+      name: user.name,
+      lastname: user.lastname,
+      email: user.email,
+      roles: user.roles?.map(role => role.name) || [],
+    };
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email: email.toLowerCase() },

@@ -20,6 +20,7 @@ import { AssignRolesDto } from './dto/assign-roles.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuditInterceptor, Audit } from '../audit/interceptors/audit.interceptor';
 import { AuditEntity, AuditAction } from '../audit/entities/audit-log.entity';
 
@@ -45,6 +46,18 @@ export class UsersController {
       return this.usersService.findByRole(role);
     }
     return this.usersService.findAll();
+  }
+
+  /**
+   * Obtener información del usuario actual (inspector/ingeniero)
+   * Este endpoint permite a inspectores e ingenieros obtener su propio ID y datos
+   * para utilizarlo al rellenar boletas
+   */
+  @Get('me')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin', 'ingeniero', 'inspector')
+  getMyInfo(@CurrentUser() user: any) {
+    return this.usersService.getMyInfo(user.id);
   }
 
   @Get('stats')
