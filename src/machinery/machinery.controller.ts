@@ -105,6 +105,7 @@ export class MachineryController {
 
   // CRUD base
   @Post('report')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   @Audit(AuditEntity.REPORTES, AuditAction.CREATE) // Sin descripción estática para usar la generada automáticamente
   async createReport(@Body() dto: CreateReportDto, @CurrentUser() user: any) {
     // Si es operario, solo puede crear reportes para sí mismo
@@ -122,6 +123,7 @@ export class MachineryController {
   }
 
   @Get('report')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   async findAllReports(@CurrentUser() user: any) {
     // Si es operario, solo puede ver sus propios reportes
     if (user.roles?.some((r: any) => r.name === 'operario')) {
@@ -138,12 +140,14 @@ export class MachineryController {
 
   // DINÁMICAS AL FINAL + regex de dígitos
   @Get('report/:id(\\d+)')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   findReportById(@Param('id', ParseIntPipe) id: number) {
     return this.service.findReportById(id);
   }
 
 
   @Patch('report/:id(\\d+)')
+  @Roles('superadmin', 'ingeniero', 'inspector', 'operario')
   @Audit(AuditEntity.REPORTES, AuditAction.UPDATE)
   async updateReport(
     @Param('id', ParseIntPipe) id: number,
